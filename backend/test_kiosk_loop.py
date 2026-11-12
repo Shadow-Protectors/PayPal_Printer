@@ -39,7 +39,7 @@ def test_full_kiosk_payment_print_loop(client):
     assert float(data["summary_price"]) < float(data["full_price"])
     file_id = data["file_id"]
 
-    # 2. Create order (Server-authoritative pricing)
+    # 2. Create order (Server-authoritative pricing strictly in sync with summary)
     create_res = client.post(
         "/api/kiosk/create-order",
         json={"file_id": file_id, "mode": "summary", "currency": "USD"}
@@ -48,7 +48,17 @@ def test_full_kiosk_payment_print_loop(client):
     order_data = create_res.json()
     paypal_order_id = order_data["paypal_order_id"]
     expected_amount = order_data["amount"]
-    assert float(expected_amount) > 0
+    assert expected_amount == data["summary_price"]
+    assert order_data["pages"] == data["summary_pages"]
+
+    # Verify full mode pricing sync as well
+    create_full_res = client.post(
+        "/api/kiosk/create-order",
+        json={"file_id": file_id, "mode": "full", "currency": "USD"}
+    )
+    assert create_full_res.status_code == 200
+    assert create_full_res.json()["amount"] == data["full_price"]
+    assert create_full_res.json()["pages"] == data["original_pages"]
 
     # 3. Capture order & verify issuance of 6-digit PIN
     capture_res = client.post(

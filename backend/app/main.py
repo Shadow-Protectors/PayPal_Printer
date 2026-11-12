@@ -129,7 +129,7 @@ def _ensure_default_station():
             db.commit()
 
         # Also ensure at least one active printer exists for this station
-        printer = db.query(Printer).filter(Printer.server_id == station_id).first()
+        printer = db.query(Printer).filter(Printer.id == "printer_01").first()
         if not printer:
             printer = Printer(
                 id="printer_01",
@@ -148,6 +148,13 @@ def _ensure_default_station():
             db.commit()
             logger.info("Initialized default printer for station: %s", station_id)
         else:
+            printer.server_id = station_id
+            printer.is_enabled = True
+            printer.is_active = True
+            printer.printer_status = "READY"
+            printer.last_seen = now
+            printer.has_mismatch = False
+            db.commit()
             printer.is_enabled = True
             printer.is_active = True
             printer.printer_status = "READY"

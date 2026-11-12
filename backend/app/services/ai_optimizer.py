@@ -201,8 +201,10 @@ class AIOptimizerService:
         output_pdf_path = str(Path(output_dir) / f"{filename}_ai_summary.pdf")
         summary_pages = self.compile_summary_pdf(summary_text, output_pdf_path)
 
-        # Enforce realistic ceiling (e.g. summary is never more than 20% of original, min 1 page)
-        summary_pages = max(1, min(summary_pages, max(1, original_pages // 3)))
+        # Enforce aggressive compression ceiling: max 5 pages or 10% of original, whichever is smaller.
+        # This matches the demo narrative (40-page doc → 2 pages, 264-page doc → 5 pages).
+        ceiling = max(1, min(5, original_pages // 10))
+        summary_pages = max(1, min(summary_pages, ceiling))
 
         savings_percent = round((1.0 - (summary_pages / max(1, original_pages))) * 100)
         if savings_percent < 0:

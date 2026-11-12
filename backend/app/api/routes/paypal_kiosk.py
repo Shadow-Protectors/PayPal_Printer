@@ -154,7 +154,24 @@ async def create_paypal_kiosk_order(
     rate = getattr(settings, "PER_PAGE_RATE", 0.10)
     
     if req.mode == "summary":
-        pages = max(1, doc.page_count // 3)
+        summary_dir = Path(settings.STORAGE_ROOT) / "summaries"
+        filename_stem = Path(doc.stored_filename).stem
+        summary_path = summary_dir / f"{filename_stem}_ai_summary.pdf"
+        pages = 1
+        if summary_path.exists():
+            try:
+                reader = PdfReader(str(summary_path))
+                pages = max(1, len(reader.pages))
+            except Exception as e:
+                logger.warning("Could not read summary PDF %s: %s", summary_path, e)
+                pages = 1
+        else:
+            if Path(doc.storage_key).exists():
+                opt = ai_optimizer.optimize_document(doc.storage_key, str(summary_dir))
+                pages = opt.get("summary_pages", 1)
+            else:
+                pages = 1
+        
         amount = f"{(pages * rate):.2f}"
         desc = f"SmartPrint AI Summary ({pages} pgs) for {doc.original_filename}"
     else:
@@ -252,13 +269,20 @@ async def capture_paypal_kiosk_order(
     if order.status == OrderStatus.PAID:
         existing_otp = db.query(OTP).filter(OTP.order_id == order.id).first()
         raw_pin = existing_otp.encrypted_value if existing_otp else "REPRINT"
+        doc = db.query(Document).filter(Document.id == order.document_id).first()
         return {
             "status": "PAID",
             "message": "Order already verified and paid.",
             "release_code": raw_pin,
             "expires_in_minutes": 30,
             "job_status": "QUEUED",
-            "order_id": order.id
+            "order_id": order.id,
+            "document_id": order.document_id,
+            "pages": order.total_pages,
+            "amount": str(order.amount),
+            "currency": order.currency,
+            "filename": doc.original_filename if doc else (order.print_settings.get("filename", "document.pdf") if order.print_settings else "document.pdf"),
+            "mode": order.print_settings.get("mode", "summary") if order.print_settings else "summary"
         }
 
     # Execute PayPal Capture
@@ -315,13 +339,20 @@ async def capture_paypal_kiosk_order(
     db.add(print_job)
     db.commit()
 
+    doc = db.query(Document).filter(Document.id == order.document_id).first()
     return {
         "status": "PAID",
         "message": "Payment verified via PayPal Sandbox. Document queued for campus kiosk.",
         "release_code": raw_pin,
         "expires_in_minutes": 30,
         "job_status": "QUEUED",
-        "order_id": order.id
+        "order_id": order.id,
+        "document_id": order.document_id,
+        "pages": order.total_pages,
+        "amount": str(order.amount),
+        "currency": order.currency,
+        "filename": doc.original_filename if doc else (order.print_settings.get("filename", "document.pdf") if order.print_settings else "document.pdf"),
+        "mode": order.print_settings.get("mode", "summary") if order.print_settings else "summary"
     }
 
 @router.post("/release-code")
@@ -496,8 +527,14 @@ async def get_document_ai_preview(
     if not takeaways:
         takeaways = [l.strip() for l in summary_text.split("\n") if len(l.strip()) > 20][:6]
 
-    rate = getattr(settings, "PER_PAGE_RATE", 2.00)
-    summary_pages = max(1, doc.page_count // 3)
+    rate = getattr(settings, "PER_PAGE_RATE", 0.10)
+    summary_pages = 1
+    if summary_path.exists():
+        try:
+            reader = PdfReader(str(summary_path))
+            summary_pages = max(1, len(reader.pages))
+        except Exception:
+            summary_pages = 1
 
     return {
         "file_id": doc.id,
@@ -508,7 +545,7 @@ async def get_document_ai_preview(
         "summary_price": f"{(summary_pages * rate):.2f}",
         "savings_percent": round((1.0 - (summary_pages / max(1, doc.page_count))) * 100),
         "toner_saved_percent": 75,
-        "reading_time_saved_minutes": max(10, doc.page_count * 3),
+        "reading_time_saved_minutes": max(10, (doc.page_count - summary_pages) * 3),
         "summary_text": summary_text.strip(),
         "key_takeaways": takeaways[:10],
         "summary_url": f"/api/kiosk/document/{doc.id}/download?type=summary",

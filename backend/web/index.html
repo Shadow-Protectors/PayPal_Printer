@@ -1045,6 +1045,8 @@
         dotSummary.className = "w-2 h-2 rounded-full bg-transparent";
         amountDisplay.innerText = `$${documentInfo.full_price}`;
       }
+      // Re-mount PayPal button so createOrder uses the updated printMode and price
+      mountPayPal();
     }
 
     // PayPal Integration
@@ -1135,10 +1137,11 @@
       document.getElementById('pin-display').innerText = data.release_code;
       document.getElementById('kiosk-pin-input').value = data.release_code;
 
-      document.getElementById('receipt-doc').innerText = documentInfo ? documentInfo.filename : 'Document.pdf';
-      document.getElementById('receipt-mode').innerText = printMode;
-      const pages = printMode === 'summary' ? documentInfo.summary_pages : documentInfo.original_pages;
-      const price = printMode === 'summary' ? documentInfo.summary_price : documentInfo.full_price;
+      document.getElementById('receipt-doc').innerText = data.filename || (documentInfo ? documentInfo.filename : 'Document.pdf');
+      const modeLabel = {'summary': 'AI Revision Sheet', 'full': 'Full Document'};
+      document.getElementById('receipt-mode').innerText = modeLabel[data.mode || printMode] || (data.mode || printMode).toUpperCase();
+      const pages = data.pages !== undefined ? data.pages : (printMode === 'summary' ? documentInfo.summary_pages : documentInfo.original_pages);
+      const price = data.amount !== undefined ? data.amount : (printMode === 'summary' ? documentInfo.summary_price : documentInfo.full_price);
       document.getElementById('receipt-total').innerText = `${pages} Pages • $${price} USD`;
 
       showToast('Payment verified. PIN ready.', 'success');
