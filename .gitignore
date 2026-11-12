@@ -1,0 +1,88 @@
+# Dependencies and artifacts
+node_modules/
+dist/
+build/
+.next/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+.coverage
+
+# Flutter / Dart
+frontend/build/
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.pub-cache/
+frontend/.pub/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+# Auto-generated at runtime by start_tunnel.sh — contains live Cloudflare URL
+frontend/lib/config/active_tunnel.dart
+
+# Python Virtual Environments
+venv/
+.venv/
+env/
+.env/
+
+# Environment & credentials (keep .env.example tracked)
+.env
+*.env
+.env.*
+!.env.example
+
+# Local storage and databases
+storage/
+*.db
+*.sqlite
+*.sqlite3
+
+# Agent configurations
+.agents/
+.agent/
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local Binaries
+bin/
+
+# Runtime and logs
+.runtime/
+logs/
+*.log
+print-agent/state/
+
+# Markdown documentation: only root README.md is tracked
+*.md
+**/*.md
+!/AGENTS.md
+!/README.md
+!/docs/*.md
+
+# Downloads and local builds
+downloads/
+*.apk
+.kotlin/
+frontend/android/.kotlin/
+
+# Graphify local knowledge graph
+graphify-out/
+.graphify*
+
+# Local backups and release archives
+backups/
+release-artifacts/
+docs/Autonomous_Printer_Architecture_and_Developer_Handbook.pdf
