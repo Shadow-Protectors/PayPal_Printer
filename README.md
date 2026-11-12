@@ -2,6 +2,7 @@
 ### PayPal AI Hackathon 2026 Submission
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Demo Video](https://img.shields.io/badge/Demo%20Video-YouTube-red.svg)](https://youtu.be/oXzuF-Bvp4Y)
 [![Backend: FastAPI](https://img.shields.io/badge/Backend-FastAPI-blue.svg)](https://fastapi.tiangolo.com/)
 [![Payment: PayPal Sandbox](https://img.shields.io/badge/Payment-PayPal%20Sandbox-003087.svg)](https://developer.paypal.com/)
 [![AI: Google Gemini](https://img.shields.io/badge/AI-Gemini%201.5%20Flash-orange.svg)](https://deepmind.google/technologies/gemini/)
