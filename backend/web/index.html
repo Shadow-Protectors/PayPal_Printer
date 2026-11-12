@@ -1,381 +1,975 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-slate-50 antialiased">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmartPrint AI - Autonomous Campus Print Kiosk</title>
+  <title>SmartPrint</title>
+  
+  <!-- Inter font from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            border: '#e2e8f0',
+            input: '#e2e8f0',
+            ring: '#0f172a',
+            background: '#ffffff',
+            foreground: '#0f172a',
+            muted: {
+              DEFAULT: '#f1f5f9',
+              foreground: '#64748b',
+            },
+            primary: {
+              DEFAULT: '#0f172a',
+              foreground: '#ffffff',
+            },
+            accent: {
+              DEFAULT: '#f8fafc',
+              foreground: '#0f172a',
+            },
+            sidebar: {
+              DEFAULT: '#090d16',
+              foreground: '#94a3b8',
+              active: '#1e293b',
+              border: '#1e293b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .glass-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(226, 232, 240, 0.8);
+    :root {
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    
+    * {
+      border-color: #e2e8f0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      letter-spacing: -0.012em;
+    }
+
+    /* shadcn thin scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Sidebar transition */
+    #sidebar {
+      transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    /* Collapsed sidebar styling */
+    #sidebar.sidebar-collapsed {
+      width: 4rem; /* 64px */
+    }
+    #sidebar.sidebar-collapsed .sidebar-text,
+    #sidebar.sidebar-collapsed .sidebar-badge {
+      display: none !important;
+    }
+    #sidebar.sidebar-collapsed .sidebar-icon-center {
+      justify-content: center;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    #sidebar.sidebar-collapsed .sidebar-brand-name {
+      display: none !important;
+    }
+
+    /* Modals & Toasts animations */
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.97) translateY(6px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-modal {
+      animation: modalIn 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-toast {
+      animation: toastIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="h-full bg-slate-50 text-slate-900 flex overflow-hidden">
 
-  <!-- Navigation -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
-    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl shadow-md shadow-indigo-200">
-          <i class="fa-solid fa-print"></i>
-        </div>
-        <div>
-          <span class="font-extrabold text-xl tracking-tight text-slate-900">SmartPrint<span class="text-indigo-600">AI</span></span>
-          <span class="text-xs ml-2 px-2 py-0.5 bg-indigo-50 text-indigo-700 font-semibold rounded-full border border-indigo-200">Campus Kiosk</span>
-        </div>
-      </div>
-      <div class="flex items-center space-x-3">
-        <div class="flex items-center space-x-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold border border-emerald-200">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>PayPal Sandbox Active</span>
-        </div>
-        <a href="#orders-section" class="text-xs font-semibold text-slate-600 hover:text-indigo-600">Recent Jobs</a>
-      </div>
-    </div>
-  </header>
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div id="mobile-backdrop" onclick="toggleSidebar()" class="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm hidden md:hidden"></div>
 
-  <!-- Hero Section -->
-  <main class="flex-grow max-w-5xl mx-auto px-4 py-8 w-full">
+  <!-- ======================================================== -->
+  <!-- SIDEBAR COMPONENT (shadcn/ui Sidebar)                   -->
+  <!-- ======================================================== -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#090d16] text-slate-300 border-r border-[#1e293b] flex flex-col shrink-0 -translate-x-full md:translate-x-0 md:static">
     
-    <div class="text-center mb-8">
-      <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">
-        AI-Optimized Campus Printing
-      </h1>
-      <p class="mt-2 text-slate-600 max-w-2xl mx-auto text-sm sm:text-base">
-        Upload your lecture slides or notes. Gemini AI strips ink-heavy slides into concise exam cheat sheets, calculates dynamic server-verified pricing, and unlocks immediate print release via PayPal.
-      </p>
+    <!-- Sidebar Header with Brand & Close/Collapse Trigger -->
+    <div class="h-14 px-3.5 flex items-center justify-between border-b border-[#1e293b]">
+      <div class="flex items-center space-x-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-sm">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+        </div>
+        <div class="sidebar-brand-name flex flex-col min-w-0">
+          <span class="font-semibold text-sm tracking-tight text-white truncate">SmartPrint</span>
+          <span class="text-[10px] text-slate-400 font-mono">Station 01</span>
+        </div>
+      </div>
+      
+      <!-- Sidebar Close / Collapse Button -->
+      <button onclick="toggleSidebar()" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors" title="Toggle sidebar">
+        <i id="sidebar-collapse-icon" data-lucide="panel-left-close" class="w-4 h-4"></i>
+      </button>
     </div>
 
-    <!-- Step 1: Upload Card -->
-    <div id="upload-card" class="glass-card rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8 transition-all">
-      <div class="flex items-center space-x-3 mb-4">
-        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm">1</div>
-        <h2 class="text-lg font-bold text-slate-900">Upload Lecture PDF / Class Document</h2>
-      </div>
+    <!-- Sidebar Navigation Menu -->
+    <nav class="flex-1 px-2.5 py-3 space-y-1 overflow-y-auto">
+      
+      <button onclick="switchTab('terminal')" id="nav-terminal" class="sidebar-icon-center w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors bg-slate-800 text-white">
+        <i data-lucide="upload" class="w-4 h-4 text-blue-400 shrink-0"></i>
+        <span class="sidebar-text">Dispatch</span>
+      </button>
 
-      <div id="drop-zone" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-8 text-center cursor-pointer bg-slate-50/50 hover:bg-indigo-50/30 transition-all">
-        <input type="file" id="file-input" accept=".pdf" class="hidden">
-        <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
-          <i class="fa-solid fa-cloud-arrow-up"></i>
+      <button onclick="switchTab('orders')" id="nav-orders" class="sidebar-icon-center w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/60">
+        <i data-lucide="list" class="w-4 h-4 text-slate-400 shrink-0"></i>
+        <span class="sidebar-text">Queue</span>
+        <span id="badge-order-count" class="sidebar-badge ml-auto text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">0</span>
+      </button>
+
+      <button onclick="switchTab('claim')" id="nav-claim" class="sidebar-icon-center w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/60">
+        <i data-lucide="keypad" class="w-4 h-4 text-slate-400 shrink-0"></i>
+        <span class="sidebar-text">Touchscreen</span>
+      </button>
+
+      <button onclick="switchTab('hardware')" id="nav-hardware" class="sidebar-icon-center w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/60">
+        <i data-lucide="server" class="w-4 h-4 text-slate-400 shrink-0"></i>
+        <span class="sidebar-text">Hardware</span>
+      </button>
+
+    </nav>
+
+    <!-- Sidebar Footer / Operator Avatar Dropdown Component -->
+    <div class="p-2.5 border-t border-[#1e293b] relative">
+      <div onclick="toggleUserMenu(event)" class="sidebar-icon-center w-full flex items-center space-x-2.5 p-2 rounded-md hover:bg-slate-800/70 cursor-pointer transition-colors">
+        <!-- Avatar with Status Dot -->
+        <div class="relative w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center font-medium text-xs text-white shrink-0">
+          <span>OP</span>
+          <span class="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 border border-[#090d16]"></span>
         </div>
-        <p class="text-sm font-semibold text-slate-800">Click to upload or drag and drop</p>
-        <p class="text-xs text-slate-500 mt-1">Accepts lecture slides, syllabus, or notes in PDF format</p>
+        <div class="sidebar-text flex-1 min-w-0 text-left">
+          <div class="text-xs font-medium text-white truncate">Operator</div>
+          <div class="text-[10px] text-slate-400 truncate">Library 1F</div>
+        </div>
+        <i data-lucide="chevrons-up-down" class="sidebar-text w-3.5 h-3.5 text-slate-400 shrink-0"></i>
       </div>
 
-      <!-- Uploading Spinner -->
-      <div id="upload-spinner" class="hidden mt-6 text-center py-4">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent mb-2"></div>
-        <p class="text-sm font-semibold text-indigo-900">Extracting text & running Gemini AI Document Optimizer...</p>
-        <p class="text-xs text-slate-500 mt-0.5">Stripping background colors and summarizing key formulas</p>
+      <!-- User Dropdown Menu (shadcn/ui Dropdown Menu) -->
+      <div id="user-menu" class="hidden absolute bottom-14 left-2.5 right-2.5 bg-white text-slate-900 rounded-lg shadow-xl border border-slate-200 py-1 z-50 text-xs">
+        <div class="px-3 py-2 border-b border-slate-100">
+          <div class="font-medium">Terminal Station 01</div>
+          <div class="text-[11px] text-slate-500">Main Campus Network</div>
+        </div>
+        <button onclick="switchTab('hardware'); toggleUserMenu()" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center space-x-2 text-slate-700">
+          <i data-lucide="server" class="w-3.5 h-3.5"></i>
+          <span>Hardware Status</span>
+        </button>
+        <button onclick="fetchOrders(); showToast('Queue synced', 'info'); toggleUserMenu()" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center space-x-2 text-slate-700">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Sync Database</span>
+        </button>
+        <div class="border-t border-slate-100 my-1"></div>
+        <button onclick="resetFlow(); toggleUserMenu()" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center space-x-2 text-slate-700">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+          <span>Reset Terminal</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ======================================================== -->
+  <!-- MAIN WORKSPACE VIEWPORT                                  -->
+  <!-- ======================================================== -->
+  <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white">
+    
+    <!-- Top Header Navigation Bar (shadcn/ui Header) -->
+    <header class="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0">
+      <div class="flex items-center space-x-3">
+        <!-- Sidebar Toggle Trigger Button (PanelLeft) -->
+        <button onclick="toggleSidebar()" class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors" title="Toggle sidebar">
+          <i data-lucide="panel-left" class="w-4 h-4"></i>
+        </button>
+        
+        <div class="h-4 w-[1px] bg-slate-200"></div>
+
+        <!-- Breadcrumb (shadcn/ui Breadcrumb) -->
+        <nav class="flex items-center space-x-1.5 text-xs text-slate-500 font-medium">
+          <span class="text-slate-900">Terminal</span>
+          <span>/</span>
+          <span id="breadcrumb-title" class="text-slate-600">Dispatch</span>
+        </nav>
+      </div>
+
+      <!-- Right Header Actions -->
+      <div class="flex items-center space-x-2">
+        <!-- PayPal Sandbox Pill Badge -->
+        <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+          <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+          <span>PayPal Sandbox</span>
+        </div>
+
+        <!-- Refresh Button -->
+        <button onclick="fetchOrders(); fetchStats(); showToast('Updated', 'info')" class="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors" title="Refresh">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Station Avatar -->
+        <div class="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-semibold">
+          K1
+        </div>
+      </div>
+    </header>
+
+    <!-- Sub-Header: Segmented Tabs (shadcn/ui Tabs) -->
+    <div class="bg-slate-50 border-b border-slate-200 px-4 py-2 shrink-0">
+      <div class="inline-flex h-8 items-center justify-center rounded-lg bg-slate-200/70 p-1 text-slate-600 text-xs">
+        <button onclick="switchTab('terminal')" id="tab-btn-terminal" class="tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium ring-offset-background transition-all bg-white text-slate-900 shadow-sm">
+          Dispatch
+        </button>
+        <button onclick="switchTab('orders')" id="tab-btn-orders" class="tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium ring-offset-background transition-all text-slate-600 hover:text-slate-900">
+          Queue
+        </button>
+        <button onclick="switchTab('claim')" id="tab-btn-claim" class="tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium ring-offset-background transition-all text-slate-600 hover:text-slate-900">
+          Touchscreen
+        </button>
+        <button onclick="switchTab('hardware')" id="tab-btn-hardware" class="tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium ring-offset-background transition-all text-slate-600 hover:text-slate-900">
+          Hardware
+        </button>
       </div>
     </div>
 
-    <!-- Step 2: Optimization Comparison & Pricing -->
-    <div id="pricing-card" class="hidden glass-card rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8 transition-all">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm">2</div>
-          <div>
-            <h2 class="text-lg font-bold text-slate-900">Select Print Mode</h2>
-            <p id="doc-meta" class="text-xs text-slate-500 font-medium"></p>
-          </div>
-        </div>
-        <span id="savings-badge" class="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full border border-emerald-200">
-          Save 90%
-        </span>
-      </div>
+    <!-- Main Scrollable Content Body -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-50/50">
+      <div class="max-w-4xl mx-auto space-y-6">
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-        <!-- Option A: Standard Full Print -->
-        <div id="opt-full" onclick="selectMode('full')" class="border-2 border-slate-200 hover:border-slate-400 rounded-xl p-5 cursor-pointer transition-all bg-white relative">
-          <div class="flex justify-between items-start mb-2">
+        <!-- ======================================================== -->
+        <!-- VIEW 1: PRINT TERMINAL (Upload / Configure / Release)    -->
+        <!-- ======================================================== -->
+        <div id="view-terminal" class="view-panel space-y-6">
+
+          <!-- View Title -->
+          <div class="flex items-center justify-between">
             <div>
-              <span class="text-xs font-semibold uppercase text-slate-500 tracking-wider">Standard</span>
-              <h3 class="text-base font-bold text-slate-900">Full Raw Document</h3>
+              <h1 class="text-lg font-bold text-slate-900 tracking-tight sm:text-xl">Print Terminal</h1>
             </div>
-            <span id="full-price-tag" class="text-lg font-extrabold text-slate-900">$0.00</span>
+            <span class="text-xs text-slate-400 font-mono">Max 50MB PDF</span>
           </div>
-          <p class="text-xs text-slate-500 mb-4">Prints all original slides exactly as uploaded with full background artwork.</p>
-          <div class="flex items-center justify-between text-xs font-semibold text-slate-600 border-t border-slate-100 pt-3">
-            <span id="full-pages-count">-- Pages</span>
-            <span class="text-slate-400">$0.10 / page</span>
-          </div>
-        </div>
 
-        <!-- Option B: AI Smart Revision Sheet -->
-        <div id="opt-summary" onclick="selectMode('summary')" class="border-2 border-indigo-600 bg-indigo-50/40 rounded-xl p-5 cursor-pointer transition-all relative shadow-sm">
-          <div class="absolute -top-3 right-4 bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow">
-            AI Recommended
-          </div>
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <span class="text-xs font-semibold uppercase text-indigo-600 tracking-wider">Gemini 1.5 Flash</span>
-              <h3 class="text-base font-bold text-indigo-950">High-Yield Revision Sheet</h3>
+          <!-- Step 1: Document Upload Card (shadcn/ui Card) -->
+          <div id="card-upload" class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Step 1 • Document Upload</span>
             </div>
-            <span id="summary-price-tag" class="text-xl font-extrabold text-indigo-700">$0.00</span>
-          </div>
-          <p class="text-xs text-slate-600 mb-4">AI condenses definitions, theorems, and exam formulas onto clean, toner-efficient sheets.</p>
-          <div class="flex items-center justify-between text-xs font-semibold text-indigo-900 border-t border-indigo-100 pt-3">
-            <span id="summary-pages-count">-- Pages</span>
-            <span class="text-emerald-700 font-bold">Lowest Campus Cost</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- PayPal Action Area -->
-      <div class="mt-8 border-t border-slate-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Due (Server Computed)</p>
-          <div class="flex items-baseline space-x-2">
-            <span id="checkout-amount" class="text-3xl font-extrabold text-slate-900">$0.00</span>
-            <span class="text-xs text-slate-500 font-bold">USD</span>
+            <!-- Drag and Drop Dropzone -->
+            <div id="drop-zone" class="border-2 border-dashed border-slate-200 hover:border-slate-400 rounded-xl p-8 sm:p-12 text-center cursor-pointer bg-slate-50/50 hover:bg-slate-100/50 transition-all flex flex-col items-center justify-center">
+              <input type="file" id="file-input" accept=".pdf" class="hidden">
+              <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 mb-3">
+                <i data-lucide="file-up" class="w-5 h-5"></i>
+              </div>
+              <p class="text-sm font-medium text-slate-800">Drop PDF here or click to browse</p>
+              <button type="button" class="mt-4 inline-flex items-center justify-center rounded-md text-xs font-medium h-8 px-4 bg-white border border-slate-200 shadow-sm hover:bg-slate-50 text-slate-700">
+                Select File
+              </button>
+            </div>
+
+            <!-- Upload Progress & Spinner (shadcn/ui Progress & Spinner) -->
+            <div id="upload-progress" class="hidden py-8 px-4 text-center">
+              <div class="inline-flex items-center justify-center mb-3">
+                <div class="w-6 h-6 rounded-full border-2 border-slate-900 border-t-transparent animate-spin"></div>
+              </div>
+              <div class="text-xs font-semibold text-slate-900">Processing document</div>
+              <div id="progress-sub" class="text-[11px] text-slate-500 mt-0.5">Analyzing page count</div>
+              
+              <div class="max-w-xs mx-auto mt-4 bg-slate-100 rounded-full h-1 overflow-hidden">
+                <div id="progress-bar-fill" class="bg-slate-900 h-1 rounded-full transition-all duration-300 w-1/4"></div>
+              </div>
+            </div>
           </div>
+
+          <!-- Step 2: Print Configuration & Checkout Card -->
+          <div id="card-pricing" class="hidden bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Step 2 • Print Options</span>
+                <div id="doc-meta-label" class="text-xs font-medium text-slate-900 mt-0.5">--</div>
+              </div>
+              <span id="savings-badge" class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                Save 60%
+              </span>
+            </div>
+
+            <!-- Options Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              <!-- Option A: Summary Sheet -->
+              <div id="opt-summary" onclick="selectMode('summary')" class="border-2 border-slate-900 bg-slate-50/50 rounded-xl p-4 cursor-pointer transition-all relative">
+                <div class="flex items-start justify-between">
+                  <div class="flex items-center space-x-2">
+                    <div id="radio-summary" class="w-4 h-4 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                      <div class="w-2 h-2 rounded-full bg-slate-900"></div>
+                    </div>
+                    <div>
+                      <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Condensed</span>
+                      <div class="text-sm font-bold text-slate-900">Revision Sheet</div>
+                    </div>
+                  </div>
+                  <span id="price-summary" class="text-base font-bold text-slate-900">$0.00</span>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs font-medium text-slate-600">
+                  <span id="pages-summary">-- Pages</span>
+                  <span class="text-emerald-700 font-semibold">Toner-Efficient</span>
+                </div>
+              </div>
+
+              <!-- Option B: Full Print -->
+              <div id="opt-full" onclick="selectMode('full')" class="border border-slate-200 hover:border-slate-300 rounded-xl p-4 cursor-pointer transition-all bg-white relative">
+                <div class="flex items-start justify-between">
+                  <div class="flex items-center space-x-2">
+                    <div id="radio-full" class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                      <div class="w-2 h-2 rounded-full bg-transparent"></div>
+                    </div>
+                    <div>
+                      <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Standard</span>
+                      <div class="text-sm font-bold text-slate-900">Complete Document</div>
+                    </div>
+                  </div>
+                  <span id="price-full" class="text-base font-bold text-slate-900">$0.00</span>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-500">
+                  <span id="pages-full">-- Pages</span>
+                  <span>Original Slides</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Total & Checkout Footer -->
+            <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Due</span>
+                <div class="flex items-baseline space-x-1 mt-0.5">
+                  <span id="checkout-amount" class="text-2xl font-bold text-slate-900">$0.00</span>
+                  <span class="text-xs text-slate-500 font-medium">USD</span>
+                </div>
+              </div>
+
+              <div class="w-full sm:w-80 space-y-2">
+                <div id="paypal-button-container" class="w-full min-h-[40px]"></div>
+
+                <button id="btn-sandbox-pay" onclick="runSandboxPayment()" class="w-full inline-flex items-center justify-center rounded-md text-xs font-semibold h-9 px-4 bg-slate-900 text-white hover:bg-slate-800 shadow transition-colors space-x-2">
+                  <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
+                  <span>Sandbox Payment</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Verified Release Card -->
+          <div id="card-release" class="hidden bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <i data-lucide="check" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h2 class="text-sm font-semibold text-slate-900">Payment Verified</h2>
+                <div class="text-xs text-slate-500">Print job queued at Station 01</div>
+              </div>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center">
+              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Release PIN</span>
+              <div class="my-3 flex items-center justify-center space-x-2">
+                <span id="pin-display" class="font-mono text-3xl font-bold text-slate-900 tracking-widest bg-white px-5 py-2 rounded-lg border border-slate-200 shadow-sm">
+                  --- ---
+                </span>
+                <button onclick="copyCurrentPIN()" class="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors" title="Copy PIN">
+                  <i data-lucide="copy" class="w-4 h-4"></i>
+                </button>
+              </div>
+              <span class="text-xs text-slate-500">Valid for 30 minutes</span>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2">
+              <button onclick="switchTab('claim')" class="flex-1 inline-flex items-center justify-center rounded-md text-xs font-semibold h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white shadow transition-colors space-x-2">
+                <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                <span>Release at Touchscreen</span>
+              </button>
+              <button onclick="resetFlow()" class="inline-flex items-center justify-center rounded-md text-xs font-semibold h-9 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors">
+                New Print
+              </button>
+            </div>
+          </div>
+
         </div>
 
-        <div class="w-full sm:w-80">
-          <!-- Official PayPal Smart Buttons Container -->
-          <div id="paypal-button-container" class="w-full min-h-[45px]"></div>
+        <!-- ======================================================== -->
+        <!-- VIEW 2: PRINT QUEUE DATA TABLE (shadcn/ui Table)         -->
+        <!-- ======================================================== -->
+        <div id="view-orders" class="view-panel hidden space-y-4">
           
-          <!-- 1-Click Fast Sandbox Option for Demo Convenience -->
-          <button id="pay-btn" onclick="initiatePayPalCheckout()" class="w-full mt-2 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-lg border border-slate-200 transition-all flex items-center justify-center space-x-1.5 text-xs">
-            <i class="fa-solid fa-bolt text-amber-500"></i>
-            <span>1-Click Test Checkout (Fast Simulation)</span>
-          </button>
-          <p class="text-[10px] text-center text-slate-400 mt-1">PayPal Sandbox • Zero-Trust Capture Verified</p>
-        </div>
-      </div>
-    </div>
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 class="text-lg font-bold text-slate-900 tracking-tight sm:text-xl">Print Queue</h1>
+            </div>
 
-    <!-- Step 3: Verified Kiosk Release Screen -->
-    <div id="release-card" class="hidden glass-card rounded-2xl p-6 sm:p-8 shadow-sm border border-emerald-200 bg-emerald-50/20 mb-8 transition-all">
-      <div class="flex items-center space-x-3 mb-6">
-        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 font-bold flex items-center justify-center text-lg shadow-sm">
-          <i class="fa-solid fa-check"></i>
-        </div>
-        <div>
-          <h2 class="text-xl font-extrabold text-slate-900">Payment Verified by PayPal</h2>
-          <p class="text-xs text-emerald-700 font-semibold">Funds Captured • Document Queued for Campus Kiosk</p>
-        </div>
-      </div>
+            <div class="flex items-center space-x-2">
+              <!-- Search Input -->
+              <div class="relative w-full sm:w-60">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+                <input type="text" id="order-search" oninput="applyOrderFilters()" placeholder="Filter orders..." class="w-full bg-white border border-slate-200 rounded-md pl-8 pr-3 py-1 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900">
+              </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6 text-center">
-        <span class="text-xs font-bold uppercase tracking-widest text-slate-400">Single-Use Campus Release PIN</span>
-        <div class="my-3 flex items-center justify-center space-x-3">
-          <span id="pin-display" class="font-mono text-4xl sm:text-5xl font-extrabold text-indigo-600 tracking-wider bg-slate-50 px-6 py-2 rounded-xl border border-slate-200">
-            839-104
-          </span>
-          <button onclick="copyPIN()" class="p-3 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-100" title="Copy PIN">
-            <i class="fa-regular fa-copy text-lg"></i>
-          </button>
-        </div>
-        <p class="text-xs text-slate-500 font-medium flex items-center justify-center space-x-1">
-          <i class="fa-regular fa-clock text-amber-500"></i>
-          <span>Expires in <strong>30 minutes</strong> • Valid for 1 print only</span>
-        </p>
-      </div>
+              <!-- Status Filter Select -->
+              <select id="order-status" onchange="applyOrderFilters()" class="bg-white border border-slate-200 rounded-md px-2.5 py-1 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900">
+                <option value="ALL">All</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="PAID">Paid</option>
+                <option value="CREATED">Created</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
 
-      <!-- Kiosk Hardware Touchscreen Simulator -->
-      <div class="bg-slate-900 text-white rounded-xl p-5 shadow-lg border border-slate-800">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-          <div class="flex items-center space-x-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <span class="text-xs font-mono font-bold tracking-wider text-slate-300">CAMPUS KIOSK STATION #01 (HARDWARE SIMULATOR)</span>
+              <!-- Refresh Button -->
+              <button onclick="fetchOrders(); showToast('Queue refreshed', 'info')" class="p-1.5 border border-slate-200 bg-white hover:bg-slate-50 rounded-md text-slate-600" title="Refresh">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
           </div>
-          <span class="text-[11px] text-slate-400 font-mono">CUPS Ready</span>
+
+          <!-- Table Container (shadcn/ui Table) -->
+          <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-medium">
+                    <th class="py-2.5 px-3">Order</th>
+                    <th class="py-2.5 px-3">Document</th>
+                    <th class="py-2.5 px-3">Mode</th>
+                    <th class="py-2.5 px-3 text-center">Pages</th>
+                    <th class="py-2.5 px-3">Amount</th>
+                    <th class="py-2.5 px-3">PIN</th>
+                    <th class="py-2.5 px-3">Status</th>
+                    <th class="py-2.5 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-tbody" class="divide-y divide-slate-100 text-slate-700">
+                  <!-- Generated dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination Bar -->
+            <div class="px-3 py-2 border-t border-slate-200 bg-slate-50/50 flex items-center justify-between text-xs text-slate-500">
+              <span id="page-info">Showing 0 orders</span>
+              <div class="flex items-center space-x-1.5">
+                <button id="page-prev" onclick="changePage(-1)" class="px-2.5 py-1 bg-white border border-slate-200 rounded text-slate-600 hover:bg-slate-50 disabled:opacity-40" disabled>Previous</button>
+                <button id="page-next" onclick="changePage(1)" class="px-2.5 py-1 bg-white border border-slate-200 rounded text-slate-600 hover:bg-slate-50 disabled:opacity-40" disabled>Next</button>
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        <div class="flex flex-col sm:flex-row items-center gap-3">
-          <input type="text" id="kiosk-pin-input" placeholder="Enter 6-digit PIN on Touchscreen" class="w-full sm:w-64 bg-slate-800 text-white font-mono text-center px-4 py-2.5 rounded-lg border border-slate-700 text-sm focus:outline-none focus:border-indigo-500">
-          <button onclick="claimKioskPrint()" class="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-sm transition-all flex items-center justify-center space-x-2">
-            <i class="fa-solid fa-fingerprint"></i>
-            <span>Simulate Kiosk Claim & Print</span>
-          </button>
+        <!-- ======================================================== -->
+        <!-- VIEW 3: TOUCHSCREEN PIN TERMINAL SIMULATOR               -->
+        <!-- ======================================================== -->
+        <div id="view-claim" class="view-panel hidden space-y-6">
+          <div>
+            <h1 class="text-lg font-bold text-slate-900 tracking-tight sm:text-xl">Touchscreen Terminal</h1>
+          </div>
+
+          <div class="bg-[#090d16] text-slate-100 border border-[#1e293b] rounded-xl p-6 sm:p-8 shadow-lg max-w-md mx-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-[#1e293b]">
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="text-xs font-mono font-medium text-slate-300">Station 01</span>
+              </div>
+              <span class="text-xs font-mono text-slate-400">CUPS Ready</span>
+            </div>
+
+            <div class="my-6 space-y-2">
+              <label class="block text-xs font-medium text-slate-300">Release PIN</label>
+              <input type="text" id="kiosk-pin-input" placeholder="123-456" maxlength="7" class="w-full bg-slate-900 border border-slate-700 text-white font-mono text-center text-xl py-2.5 rounded-lg focus:outline-none focus:border-blue-500 tracking-widest placeholder-slate-600">
+            </div>
+
+            <button onclick="submitPinClaim()" class="w-full inline-flex items-center justify-center rounded-md text-xs font-semibold h-9 px-4 bg-blue-600 hover:bg-blue-500 text-white shadow transition-colors space-x-2">
+              <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+              <span>Release Print</span>
+            </button>
+
+            <div id="kiosk-msg-box" class="hidden mt-4 p-2.5 rounded-lg text-xs font-mono"></div>
+          </div>
         </div>
-        <div id="kiosk-msg" class="hidden mt-3 p-3 bg-emerald-950 text-emerald-300 text-xs font-mono rounded-lg border border-emerald-800"></div>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 4: HARDWARE & SYSTEM STATUS                        -->
+        <!-- ======================================================== -->
+        <div id="view-hardware" class="view-panel hidden space-y-6">
+          <div>
+            <h1 class="text-lg font-bold text-slate-900 tracking-tight sm:text-xl">Hardware Status</h1>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+              <span class="text-xs font-medium text-slate-500">Station</span>
+              <div id="stat-name" class="text-sm font-bold text-slate-900 mt-1">Main Campus Kiosk #1</div>
+              <div id="stat-loc" class="text-xs text-slate-500 mt-0.5">Library Ground Floor</div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+              <span class="text-xs font-medium text-slate-500">Status</span>
+              <div class="flex items-center space-x-2 mt-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span class="text-sm font-bold text-slate-900">ONLINE</span>
+              </div>
+              <div class="text-xs text-slate-500 mt-0.5">CUPS Daemon Ready</div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+              <span class="text-xs font-medium text-slate-500">Completed Jobs</span>
+              <div id="stat-completed-count" class="text-xl font-bold text-slate-900 mt-1">0</div>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+              <span class="text-xs font-medium text-slate-500">Active Queue</span>
+              <div id="stat-active-count" class="text-xl font-bold text-blue-600 mt-1">0</div>
+            </div>
+
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+            <span class="text-xs font-semibold text-slate-900">Printers</span>
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-slate-200 text-slate-500 font-medium">
+                  <th class="py-2">Printer Name</th>
+                  <th class="py-2">Status</th>
+                  <th class="py-2">Color</th>
+                  <th class="py-2">Duplex</th>
+                  <th class="py-2">Paper</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-slate-700">
+                <tr>
+                  <td class="py-2 font-medium">Main Campus High-Speed Laser</td>
+                  <td class="py-2"><span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700">READY</span></td>
+                  <td class="py-2 text-slate-500">Supported</td>
+                  <td class="py-2 text-slate-500">Supported</td>
+                  <td class="py-2 text-emerald-700">Available</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
-    </div>
+    </main>
 
-    <!-- Recent Orders Section -->
-    <div id="orders-section" class="glass-card rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
-          <i class="fa-solid fa-list-check text-indigo-600"></i>
-          <span>Recent Kiosk Dispatches</span>
-        </h2>
-        <button onclick="fetchOrders()" class="text-xs text-indigo-600 font-semibold hover:underline flex items-center space-x-1">
-          <i class="fa-solid fa-arrows-rotate"></i>
-          <span>Refresh</span>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: ORDER DETAILS (shadcn/ui Dialog)                  -->
+  <!-- ======================================================== -->
+  <div id="modal-details" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div onclick="closeDetailsModal()" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm"></div>
+    <div class="animate-modal relative bg-white border border-slate-200 rounded-xl shadow-xl max-w-sm w-full p-5 z-10 space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-sm font-bold text-slate-900">Order Details</h3>
+        <button onclick="closeDetailsModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-md">
+          <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead>
-            <tr class="text-slate-400 border-b border-slate-100">
-              <th class="py-2.5 font-bold uppercase">Order ID</th>
-              <th class="py-2.5 font-bold uppercase">Document</th>
-              <th class="py-2.5 font-bold uppercase">Mode</th>
-              <th class="py-2.5 font-bold uppercase">Pages</th>
-              <th class="py-2.5 font-bold uppercase">Amount</th>
-              <th class="py-2.5 font-bold uppercase">Release PIN</th>
-              <th class="py-2.5 font-bold uppercase">Status</th>
-            </tr>
-          </thead>
-          <tbody id="orders-tbody" class="divide-y divide-slate-100 text-slate-700 font-medium">
-            <tr>
-              <td colspan="7" class="py-4 text-center text-slate-400">Loading recent print orders...</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="space-y-2 text-xs">
+        <div class="flex justify-between py-1 border-b border-slate-50">
+          <span class="text-slate-500">Order ID</span>
+          <span id="detail-id" class="font-mono font-semibold text-slate-900">--</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-50">
+          <span class="text-slate-500">Document</span>
+          <span id="detail-file" class="font-medium text-slate-900 truncate max-w-[180px]">--</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-50">
+          <span class="text-slate-500">Mode</span>
+          <span id="detail-mode" class="font-semibold text-slate-900 uppercase">--</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-50">
+          <span class="text-slate-500">Pages</span>
+          <span id="detail-pages" class="font-medium text-slate-900">--</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-50">
+          <span class="text-slate-500">Amount</span>
+          <span id="detail-amount" class="font-bold text-slate-900">--</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-50">
+          <span class="text-slate-500">Release PIN</span>
+          <span id="detail-pin" class="font-mono font-bold text-blue-600">--</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-50">
+          <span class="text-slate-500">Status</span>
+          <span id="detail-status" class="px-2 py-0.5 rounded text-[10px] font-semibold">--</span>
+        </div>
+      </div>
+
+      <div class="pt-2 flex justify-end space-x-2">
+        <button onclick="copyDetailPIN()" class="inline-flex items-center justify-center rounded-md text-xs font-medium h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 space-x-1.5">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span>Copy PIN</span>
+        </button>
+        <button onclick="closeDetailsModal()" class="inline-flex items-center justify-center rounded-md text-xs font-medium h-8 px-3 bg-slate-900 hover:bg-slate-800 text-white">
+          Close
+        </button>
       </div>
     </div>
+  </div>
 
-  </main>
-
-  <!-- Footer -->
-  <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <p>SmartPrint AI • Built for PayPal AI Hackathon • Zero-Trust Server Capture Verified</p>
-      <p class="font-mono text-slate-400">Powered by PayPal REST API & Google Gemini</p>
+  <!-- ======================================================== -->
+  <!-- MODAL: CANCEL ORDER (shadcn/ui Alert Dialog)             -->
+  <!-- ======================================================== -->
+  <div id="modal-cancel" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div onclick="closeCancelModal()" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm"></div>
+    <div class="animate-modal relative bg-white border border-slate-200 rounded-xl shadow-xl max-w-sm w-full p-5 z-10 space-y-3">
+      <div class="flex items-center space-x-2 text-rose-600">
+        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+        <h3 class="text-sm font-bold text-slate-900">Cancel Order</h3>
+      </div>
+      <p id="cancel-msg" class="text-xs text-slate-500">
+        Cancel order ORD-XXXX? This deactivates the release PIN.
+      </p>
+      <div class="pt-2 flex items-center justify-end space-x-2">
+        <button onclick="closeCancelModal()" class="inline-flex items-center justify-center rounded-md text-xs font-medium h-8 px-3 border border-slate-200 hover:bg-slate-50 text-slate-700">
+          Keep Order
+        </button>
+        <button id="btn-cancel-submit" onclick="submitOrderCancellation()" class="inline-flex items-center justify-center rounded-md text-xs font-medium h-8 px-3 bg-rose-600 hover:bg-rose-700 text-white">
+          Cancel Order
+        </button>
+      </div>
     </div>
-  </footer>
+  </div>
 
-  <!-- Application Logic -->
+  <!-- ======================================================== -->
+  <!-- TOAST NOTIFICATIONS (shadcn/ui Toaster)                  -->
+  <!-- ======================================================== -->
+  <div id="toast-wrapper" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none max-w-xs w-full"></div>
+
+  <!-- ======================================================== -->
+  <!-- APPLICATION CORE LOGIC                                   -->
+  <!-- ======================================================== -->
   <script>
-    let uploadedFileId = null;
-    let selectedMode = 'summary';
-    let docData = null;
-    let currentPayPalOrderId = null;
+    let activeTab = 'terminal';
+    let fileId = null;
+    let documentInfo = null;
+    let printMode = 'summary';
+    let payPalOrderId = null;
+    let orderList = [];
+    let filteredList = [];
+    let curPage = 1;
+    const itemsPerPage = 8;
+    let cancellingId = null;
+    let modalSelectedOrder = null;
 
-    // Drag and drop setup
+    function renderIcons() {
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
+    }
+
+    // Sidebar Toggle & Collapse (shadcn Sidebar)
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('mobile-backdrop');
+      const icon = document.getElementById('sidebar-collapse-icon');
+
+      if (window.innerWidth < 768) {
+        // Mobile drawer mode
+        const isOpen = !sidebar.classList.contains('-translate-x-full');
+        if (isOpen) {
+          sidebar.classList.add('-translate-x-full');
+          backdrop.classList.add('hidden');
+        } else {
+          sidebar.classList.remove('-translate-x-full');
+          backdrop.classList.remove('hidden');
+        }
+      } else {
+        // Desktop collapse into icon-rail mode
+        sidebar.classList.toggle('sidebar-collapsed');
+        const isCollapsed = sidebar.classList.contains('sidebar-collapsed');
+        if (icon) {
+          icon.setAttribute('data-lucide', isCollapsed ? 'panel-left-open' : 'panel-left-close');
+        }
+      }
+      renderIcons();
+    }
+
+    // Keyboard shortcut Ctrl+B for Sidebar
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+      if (e.key === 'Escape') {
+        closeDetailsModal();
+        closeCancelModal();
+      }
+    });
+
+    // Tab Switching
+    function switchTab(tabId) {
+      activeTab = tabId;
+      document.querySelectorAll('.view-panel').forEach(v => v.classList.add('hidden'));
+      document.querySelectorAll('.tab-trigger').forEach(b => {
+        b.className = "tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium ring-offset-background transition-all text-slate-600 hover:text-slate-900";
+      });
+      document.querySelectorAll('#sidebar nav button').forEach(b => {
+        b.className = "sidebar-icon-center w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/60";
+      });
+
+      const targetView = document.getElementById(`view-${tabId}`);
+      if (targetView) targetView.classList.remove('hidden');
+
+      const activeTabBtn = document.getElementById(`tab-btn-${tabId}`);
+      if (activeTabBtn) {
+        activeTabBtn.className = "tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium ring-offset-background transition-all bg-white text-slate-900 shadow-sm";
+      }
+
+      const activeNavBtn = document.getElementById(`nav-${tabId}`);
+      if (activeNavBtn) {
+        activeNavBtn.className = "sidebar-icon-center w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors bg-slate-800 text-white";
+      }
+
+      const titles = { terminal: 'Dispatch', orders: 'Queue', claim: 'Touchscreen', hardware: 'Hardware' };
+      document.getElementById('breadcrumb-title').innerText = titles[tabId] || 'Terminal';
+
+      if (window.innerWidth < 768) {
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+        document.getElementById('mobile-backdrop').classList.add('hidden');
+      }
+
+      if (tabId === 'orders') fetchOrders();
+      if (tabId === 'hardware') fetchStats();
+      renderIcons();
+    }
+
+    // User Dropdown Menu
+    function toggleUserMenu(e) {
+      if (e) e.stopPropagation();
+      document.getElementById('user-menu').classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('user-menu');
+      if (menu && !menu.classList.contains('hidden') && !e.target.closest('#user-menu')) {
+        menu.classList.add('hidden');
+      }
+    });
+
+    // Toast Alerts (shadcn Toaster)
+    function showToast(text, type = 'info') {
+      const box = document.getElementById('toast-wrapper');
+      const item = document.createElement('div');
+      item.className = "pointer-events-auto animate-toast bg-white border border-slate-200 rounded-lg shadow-md p-2.5 flex items-center space-x-2.5 text-xs text-slate-800";
+
+      let icon = 'info';
+      let iconClass = 'text-blue-600';
+      if (type === 'success') { icon = 'check-circle'; iconClass = 'text-emerald-600'; }
+      if (type === 'error') { icon = 'alert-circle'; iconClass = 'text-rose-600'; }
+
+      item.innerHTML = `
+        <i data-lucide="${icon}" class="w-3.5 h-3.5 ${iconClass} shrink-0"></i>
+        <span class="flex-1 font-medium">${text}</span>
+        <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-3 h-3"></i>
+        </button>
+      `;
+      box.appendChild(item);
+      renderIcons();
+
+      setTimeout(() => { if (item.parentElement) item.remove(); }, 3500);
+    }
+
+    // File Upload Setup
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
 
     dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-indigo-600'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-indigo-600'));
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-slate-500', 'bg-slate-100/60');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-slate-500', 'bg-slate-100/60');
+    });
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
-      dropZone.classList.remove('border-indigo-600');
-      if (e.dataTransfer.files.length) handleFileUpload(e.dataTransfer.files[0]);
+      dropZone.classList.remove('border-slate-500', 'bg-slate-100/60');
+      if (e.dataTransfer.files.length) uploadFile(e.dataTransfer.files[0]);
     });
 
     fileInput.addEventListener('change', (e) => {
-      if (e.target.files.length) handleFileUpload(e.target.files[0]);
+      if (e.target.files.length) uploadFile(e.target.files[0]);
     });
 
-    async function handleFileUpload(file) {
+    async function uploadFile(file) {
       if (!file.name.toLowerCase().endsWith('.pdf')) {
-        alert('Please select a PDF document.');
+        showToast('Only PDF format is supported', 'error');
         return;
       }
 
-      document.getElementById('drop-zone').classList.add('hidden');
-      document.getElementById('upload-spinner').classList.remove('hidden');
+      dropZone.classList.add('hidden');
+      const progressBox = document.getElementById('upload-progress');
+      progressBox.classList.remove('hidden');
 
-      const formData = new FormData();
-      formData.append('file', file);
+      const bar = document.getElementById('progress-bar-fill');
+      const sub = document.getElementById('progress-sub');
+      bar.style.width = '30%';
+      sub.innerText = 'Uploading document...';
+
+      const data = new FormData();
+      data.append('file', file);
+
+      setTimeout(() => {
+        bar.style.width = '70%';
+        sub.innerText = 'Calculating print modes...';
+      }, 350);
 
       try {
-        const res = await fetch('/api/kiosk/upload', {
-          method: 'POST',
-          body: formData
-        });
-        if (!res.ok) throw new Error('Upload or AI optimization failed.');
-        
-        docData = await res.json();
-        uploadedFileId = docData.file_id;
+        const res = await fetch('/api/kiosk/upload', { method: 'POST', body: data });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || 'Upload failed');
+        }
 
-        // Render metadata & prices
-        document.getElementById('doc-meta').innerText = `${docData.filename} (${docData.original_pages} original pages)`;
-        document.getElementById('full-price-tag').innerText = `$${docData.full_price}`;
-        document.getElementById('full-pages-count').innerText = `${docData.original_pages} Pages`;
+        bar.style.width = '100%';
+        documentInfo = await res.json();
+        fileId = documentInfo.file_id;
 
-        document.getElementById('summary-price-tag').innerText = `$${docData.summary_price}`;
-        document.getElementById('summary-pages-count').innerText = `${docData.summary_pages} Pages`;
-        document.getElementById('savings-badge').innerText = `Save ${docData.savings_percent}%`;
+        setTimeout(() => {
+          progressBox.classList.add('hidden');
+          showPricingCard();
+          showToast('File analyzed', 'success');
+        }, 250);
 
-        document.getElementById('upload-spinner').classList.add('hidden');
-        document.getElementById('pricing-card').classList.remove('hidden');
-
-        selectMode('summary');
-        renderPayPalButtons();
-        fetchOrders();
       } catch (err) {
-        alert(err.message || 'Error processing document.');
-        document.getElementById('upload-spinner').classList.add('hidden');
-        document.getElementById('drop-zone').classList.remove('hidden');
+        progressBox.classList.add('hidden');
+        dropZone.classList.remove('hidden');
+        showToast(err.message || 'Processing failed', 'error');
       }
+    }
+
+    function showPricingCard() {
+      document.getElementById('card-pricing').classList.remove('hidden');
+      document.getElementById('doc-meta-label').innerText = `${documentInfo.filename} • ${documentInfo.original_pages} pages`;
+      document.getElementById('price-summary').innerText = `$${documentInfo.summary_price}`;
+      document.getElementById('pages-summary').innerText = `${documentInfo.summary_pages} Pages`;
+      document.getElementById('price-full').innerText = `$${documentInfo.full_price}`;
+      document.getElementById('pages-full').innerText = `${documentInfo.original_pages} Pages`;
+      document.getElementById('savings-badge').innerText = `Save ${documentInfo.savings_percent}%`;
+
+      selectMode('summary');
+      mountPayPal();
+      fetchOrders();
     }
 
     function selectMode(mode) {
-      selectedMode = mode;
-      const optFull = document.getElementById('opt-full');
+      printMode = mode;
       const optSummary = document.getElementById('opt-summary');
-      const checkoutAmount = document.getElementById('checkout-amount');
+      const optFull = document.getElementById('opt-full');
+      const dotSummary = document.getElementById('radio-summary').firstElementChild;
+      const dotFull = document.getElementById('radio-full').firstElementChild;
+      const amountDisplay = document.getElementById('checkout-amount');
 
       if (mode === 'summary') {
-        optSummary.className = "border-2 border-indigo-600 bg-indigo-50/40 rounded-xl p-5 cursor-pointer transition-all relative shadow-sm";
-        optFull.className = "border-2 border-slate-200 hover:border-slate-400 rounded-xl p-5 cursor-pointer transition-all bg-white relative";
-        checkoutAmount.innerText = `$${docData.summary_price}`;
+        optSummary.className = "border-2 border-slate-900 bg-slate-50/50 rounded-xl p-4 cursor-pointer transition-all relative";
+        optFull.className = "border border-slate-200 hover:border-slate-300 rounded-xl p-4 cursor-pointer transition-all bg-white relative";
+        dotSummary.className = "w-2 h-2 rounded-full bg-slate-900";
+        dotFull.className = "w-2 h-2 rounded-full bg-transparent";
+        amountDisplay.innerText = `$${documentInfo.summary_price}`;
       } else {
-        optFull.className = "border-2 border-indigo-600 bg-indigo-50/40 rounded-xl p-5 cursor-pointer transition-all relative shadow-sm";
-        optSummary.className = "border-2 border-slate-200 hover:border-slate-400 rounded-xl p-5 cursor-pointer transition-all bg-white relative";
-        checkoutAmount.innerText = `$${docData.full_price}`;
+        optFull.className = "border-2 border-slate-900 bg-slate-50/50 rounded-xl p-4 cursor-pointer transition-all relative";
+        optSummary.className = "border border-slate-200 hover:border-slate-300 rounded-xl p-4 cursor-pointer transition-all bg-white relative";
+        dotFull.className = "w-2 h-2 rounded-full bg-slate-900";
+        dotSummary.className = "w-2 h-2 rounded-full bg-transparent";
+        amountDisplay.innerText = `$${documentInfo.full_price}`;
       }
     }
 
-    let sdkLoaded = false;
-
-    async function loadPayPalSDK() {
+    // PayPal SDK Integration
+    async function initPayPal() {
       try {
         const res = await fetch('/api/kiosk/config');
-        const config = await res.json();
-        if (!config.client_id || config.client_id.includes('mock')) {
-          console.log('PayPal in mock simulation mode');
-          return;
-        }
-        const script = document.createElement('script');
-        script.src = `https://www.paypal.com/sdk/js?client-id=${config.client_id}&currency=USD&intent=capture`;
-        script.onload = () => {
-          sdkLoaded = true;
-          console.log('PayPal JS SDK loaded successfully');
-          if (uploadedFileId) renderPayPalButtons();
-        };
-        document.head.appendChild(script);
+        const cfg = await res.json();
+        if (!cfg.client_id || cfg.client_id.includes('mock')) return;
+
+        const s = document.createElement('script');
+        s.src = `https://www.paypal.com/sdk/js?client-id=${cfg.client_id}&currency=USD&intent=capture`;
+        s.onload = () => { if (fileId) mountPayPal(); };
+        document.head.appendChild(s);
       } catch (e) {
-        console.error('Failed to load PayPal config', e);
+        console.warn('PayPal init skipped', e);
       }
     }
 
-    function renderPayPalButtons() {
-      if (typeof paypal === 'undefined' || !document.getElementById('paypal-button-container')) return;
-      document.getElementById('paypal-button-container').innerHTML = '';
+    function mountPayPal() {
+      const container = document.getElementById('paypal-button-container');
+      if (typeof paypal === 'undefined' || !container) return;
+      container.innerHTML = '';
+
       paypal.Buttons({
-        style: {
-          layout: 'vertical',
-          color: 'gold',
-          shape: 'rect',
-          label: 'paypal'
-        },
+        style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'paypal', height: 36 },
         createOrder: async function() {
           const res = await fetch('/api/kiosk/create-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ file_id: uploadedFileId, mode: selectedMode, currency: 'USD' })
+            body: JSON.stringify({ file_id: fileId, mode: printMode, currency: 'USD' })
           });
-          if (!res.ok) throw new Error('Order creation failed');
-          const data = await res.json();
-          currentPayPalOrderId = data.paypal_order_id;
-          return data.paypal_order_id;
+          if (!res.ok) throw new Error('Order creation error');
+          const d = await res.json();
+          payPalOrderId = d.paypal_order_id;
+          return d.paypal_order_id;
         },
         onApprove: async function(data) {
           const res = await fetch('/api/kiosk/capture-order', {
@@ -383,69 +977,87 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ paypal_order_id: data.orderID })
           });
-          if (!res.ok) throw new Error('Capture verification failed');
-          const captureData = await res.json();
-          showVerifiedRelease(captureData);
+          if (!res.ok) throw new Error('Capture verification error');
+          const capture = await res.json();
+          handleVerifiedPayment(capture);
         },
-        onError: function(err) {
-          console.error('PayPal checkout error:', err);
-        }
+        onError: function() { showToast('Payment encountered an issue', 'error'); }
       }).render('#paypal-button-container');
     }
 
-    function showVerifiedRelease(captureData) {
-      document.getElementById('pricing-card').classList.add('hidden');
-      document.getElementById('release-card').classList.remove('hidden');
-      document.getElementById('pin-display').innerText = captureData.release_code;
-      document.getElementById('kiosk-pin-input').value = captureData.release_code;
-      fetchOrders();
-    }
-
-    async function initiatePayPalCheckout() {
-      const payBtn = document.getElementById('pay-btn');
-      payBtn.disabled = true;
-      payBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i><span>Processing Sandbox Capture...</span>`;
+    async function runSandboxPayment() {
+      const btn = document.getElementById('btn-sandbox-pay');
+      btn.disabled = true;
+      btn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Verifying...</span>`;
 
       try {
-        // Step 1: Create Order on Server (Server computes exact price)
         const orderRes = await fetch('/api/kiosk/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ file_id: uploadedFileId, mode: selectedMode, currency: 'USD' })
+          body: JSON.stringify({ file_id: fileId, mode: printMode, currency: 'USD' })
         });
-        if (!orderRes.ok) throw new Error('Order creation failed.');
+        if (!orderRes.ok) throw new Error('Order generation failed');
         const orderData = await orderRes.json();
-        currentPayPalOrderId = orderData.paypal_order_id;
 
-        // Step 2: Capture the order on server
-        const captureRes = await fetch('/api/kiosk/capture-order', {
+        const capRes = await fetch('/api/kiosk/capture-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paypal_order_id: currentPayPalOrderId })
+          body: JSON.stringify({ paypal_order_id: orderData.paypal_order_id })
         });
-        if (!captureRes.ok) throw new Error('Payment capture verification failed.');
-        const captureData = await captureRes.json();
+        if (!capRes.ok) throw new Error('Capture verification failed');
+        const capture = await capRes.json();
 
-        // Step 3: Show verified release card
-        showVerifiedRelease(captureData);
+        handleVerifiedPayment(capture);
       } catch (err) {
-        alert(err.message || 'Payment flow error.');
+        showToast(err.message || 'Payment failed', 'error');
       } finally {
-        payBtn.disabled = false;
-        payBtn.innerHTML = `<i class="fa-solid fa-bolt text-amber-500"></i><span>1-Click Test Checkout (Fast Simulation)</span>`;
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="credit-card" class="w-3.5 h-3.5"></i><span>Sandbox Payment</span>`;
+        renderIcons();
       }
     }
 
-    async function claimKioskPrint() {
+    function handleVerifiedPayment(data) {
+      document.getElementById('card-pricing').classList.add('hidden');
+      document.getElementById('card-release').classList.remove('hidden');
+      document.getElementById('pin-display').innerText = data.release_code;
+      document.getElementById('kiosk-pin-input').value = data.release_code;
+      showToast('Payment verified. PIN ready.', 'success');
+      fetchOrders();
+      renderIcons();
+    }
+
+    function copyCurrentPIN() {
+      const pin = document.getElementById('pin-display').innerText.trim();
+      navigator.clipboard.writeText(pin);
+      showToast(`PIN ${pin} copied`, 'success');
+    }
+
+    function resetFlow() {
+      fileId = null;
+      documentInfo = null;
+      payPalOrderId = null;
+      fileInput.value = '';
+
+      document.getElementById('card-release').classList.add('hidden');
+      document.getElementById('card-pricing').classList.add('hidden');
+      document.getElementById('upload-progress').classList.add('hidden');
+      document.getElementById('drop-zone').classList.remove('hidden');
+      switchTab('terminal');
+    }
+
+    // Touchscreen PIN Release
+    async function submitPinClaim() {
       const pin = document.getElementById('kiosk-pin-input').value.trim();
       if (!pin) {
-        alert('Please enter a release PIN.');
+        showToast('Enter PIN', 'error');
         return;
       }
 
-      const msgDiv = document.getElementById('kiosk-msg');
-      msgDiv.classList.remove('hidden');
-      msgDiv.innerText = 'Verifying PIN with campus printer controller...';
+      const box = document.getElementById('kiosk-msg-box');
+      box.classList.remove('hidden');
+      box.className = "mt-4 p-2.5 rounded-lg text-xs font-mono bg-slate-800 text-slate-300";
+      box.innerText = 'Verifying PIN...';
 
       try {
         const res = await fetch('/api/kiosk/release-code', {
@@ -454,57 +1066,203 @@
           body: JSON.stringify({ release_code: pin })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'PIN verification failed.');
+        if (!res.ok) throw new Error(data.detail || 'PIN verification failed');
 
-        msgDiv.className = "mt-3 p-3 bg-emerald-950 text-emerald-300 text-xs font-mono rounded-lg border border-emerald-800";
-        msgDiv.innerText = `[SUCCESS] ${data.message} Job marked COMPLETED.`;
+        box.className = "mt-4 p-2.5 rounded-lg text-xs font-mono bg-emerald-950 text-emerald-300 border border-emerald-800";
+        box.innerText = `[SUCCESS] Document released for Order ${data.order_id}.`;
+        showToast('Document printed', 'success');
         fetchOrders();
       } catch (err) {
-        msgDiv.className = "mt-3 p-3 bg-rose-950 text-rose-300 text-xs font-mono rounded-lg border border-rose-800";
-        msgDiv.innerText = `[ERROR] ${err.message}`;
+        box.className = "mt-4 p-2.5 rounded-lg text-xs font-mono bg-rose-950 text-rose-300 border border-rose-800";
+        box.innerText = `[ERROR] ${err.message}`;
+        showToast(err.message, 'error');
       }
     }
 
-    function copyPIN() {
-      const pin = document.getElementById('pin-display').innerText.trim();
-      navigator.clipboard.writeText(pin);
-      alert(`PIN ${pin} copied to clipboard!`);
-    }
-
+    // Queue & Orders Management
     async function fetchOrders() {
       try {
-        const res = await fetch('/api/kiosk/orders');
-        const data = await res.json();
-        const tbody = document.getElementById('orders-tbody');
-        if (!data.orders || !data.orders.length) {
-          tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400">No print orders yet.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = data.orders.map(o => `
-          <tr class="hover:bg-slate-50">
-            <td class="py-3 font-mono font-bold text-slate-900">${o.order_id}</td>
-            <td class="py-3 max-w-[150px] truncate" title="${o.filename}">${o.filename}</td>
-            <td class="py-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${o.mode === 'summary' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-slate-100 text-slate-700'}">${o.mode.toUpperCase()}</span></td>
-            <td class="py-3">${o.pages}</td>
-            <td class="py-3 font-bold text-slate-900">$${o.amount}</td>
-            <td class="py-3 font-mono font-bold text-indigo-600">${o.release_code || '--'}</td>
-            <td class="py-3">
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                o.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' :
-                o.status === 'PAID' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'
-              }">${o.status}</span>
-            </td>
-          </tr>
-        `).join('');
+        const res = await fetch('/api/kiosk/orders?limit=50');
+        const d = await res.json();
+        orderList = d.orders || [];
+        document.getElementById('badge-order-count').innerText = orderList.length;
+        applyOrderFilters();
       } catch (e) {
-        console.error('Failed to load orders', e);
+        console.warn('Orders fetch error', e);
       }
     }
 
-    // Auto-fetch orders and load PayPal SDK on load
+    function applyOrderFilters() {
+      const q = (document.getElementById('order-search').value || '').trim().toLowerCase();
+      const st = document.getElementById('order-status').value;
+
+      filteredList = orderList.filter(o => {
+        const matchQ = !q || o.order_id.toLowerCase().includes(q) || (o.filename && o.filename.toLowerCase().includes(q));
+        const matchSt = st === 'ALL' || o.status === st;
+        return matchQ && matchSt;
+      });
+
+      curPage = 1;
+      renderQueueTable();
+    }
+
+    function renderQueueTable() {
+      const tbody = document.getElementById('orders-tbody');
+      const start = (curPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const slice = filteredList.slice(start, end);
+
+      if (!filteredList.length) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400">No orders found</td></tr>`;
+        document.getElementById('page-info').innerText = 'Showing 0 orders';
+        document.getElementById('page-prev').disabled = true;
+        document.getElementById('page-next').disabled = true;
+        return;
+      }
+
+      tbody.innerHTML = slice.map(o => {
+        let badgeStyle = 'bg-slate-100 text-slate-700';
+        if (o.status === 'COMPLETED') badgeStyle = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+        else if (o.status === 'PAID') badgeStyle = 'bg-blue-50 text-blue-700 border border-blue-200';
+        else if (o.status === 'CREATED') badgeStyle = 'bg-amber-50 text-amber-700 border border-amber-200';
+        else if (o.status === 'CANCELLED') badgeStyle = 'bg-rose-50 text-rose-700 border border-rose-200';
+
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2.5 px-3 font-mono font-semibold text-slate-900">${o.order_id}</td>
+            <td class="py-2.5 px-3 max-w-[160px] truncate" title="${o.filename}">${o.filename}</td>
+            <td class="py-2.5 px-3 uppercase text-[10px] font-semibold text-slate-600">${o.mode}</td>
+            <td class="py-2.5 px-3 text-center font-mono">${o.pages}</td>
+            <td class="py-2.5 px-3 font-semibold text-slate-900">$${o.amount}</td>
+            <td class="py-2.5 px-3 font-mono font-semibold text-blue-600">${o.release_code || '--'}</td>
+            <td class="py-2.5 px-3">
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${badgeStyle}">${o.status}</span>
+            </td>
+            <td class="py-2.5 px-3 text-right">
+              <div class="inline-flex items-center space-x-1">
+                <button onclick="openDetails('${o.order_id}')" class="p-1 text-slate-400 hover:text-slate-800 rounded hover:bg-slate-100" title="Details">
+                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                </button>
+                ${o.release_code ? `
+                <button onclick="copyTablePIN('${o.release_code}')" class="p-1 text-slate-400 hover:text-blue-600 rounded hover:bg-slate-100" title="Copy PIN">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                </button>` : ''}
+                ${o.status !== 'CANCELLED' && o.status !== 'COMPLETED' ? `
+                <button onclick="openCancelDialog('${o.order_id}')" class="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-slate-100" title="Cancel">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('page-info').innerText = `Showing ${start + 1}-${Math.min(end, filteredList.length)} of ${filteredList.length} orders`;
+      document.getElementById('page-prev').disabled = curPage <= 1;
+      document.getElementById('page-next').disabled = end >= filteredList.length;
+      renderIcons();
+    }
+
+    function changePage(delta) {
+      curPage += delta;
+      renderQueueTable();
+    }
+
+    function copyTablePIN(pin) {
+      navigator.clipboard.writeText(pin);
+      showToast(`PIN ${pin} copied`, 'success');
+    }
+
+    // Details Modal
+    function openDetails(id) {
+      const ord = orderList.find(o => o.order_id === id);
+      if (!ord) return;
+      modalSelectedOrder = ord;
+
+      document.getElementById('detail-id').innerText = ord.order_id;
+      document.getElementById('detail-file').innerText = ord.filename;
+      document.getElementById('detail-mode').innerText = ord.mode;
+      document.getElementById('detail-pages').innerText = `${ord.pages} Pages`;
+      document.getElementById('detail-amount').innerText = `$${ord.amount} ${ord.currency || 'USD'}`;
+      document.getElementById('detail-pin').innerText = ord.release_code || '--';
+
+      const s = document.getElementById('detail-status');
+      s.innerText = ord.status;
+      s.className = "px-2 py-0.5 rounded text-[10px] font-semibold " + (
+        ord.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700' :
+        ord.status === 'PAID' ? 'bg-blue-50 text-blue-700' :
+        ord.status === 'CANCELLED' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
+      );
+
+      document.getElementById('modal-details').classList.remove('hidden');
+      renderIcons();
+    }
+
+    function closeDetailsModal() {
+      document.getElementById('modal-details').classList.add('hidden');
+      modalSelectedOrder = null;
+    }
+
+    function copyDetailPIN() {
+      if (modalSelectedOrder && modalSelectedOrder.release_code) {
+        navigator.clipboard.writeText(modalSelectedOrder.release_code);
+        showToast('PIN copied', 'success');
+      }
+    }
+
+    // Cancel Alert Dialog
+    function openCancelDialog(id) {
+      cancellingId = id;
+      document.getElementById('cancel-msg').innerText = `Cancel order ${id}? This deactivates the release PIN.`;
+      document.getElementById('modal-cancel').classList.remove('hidden');
+      renderIcons();
+    }
+
+    function closeCancelModal() {
+      document.getElementById('modal-cancel').classList.add('hidden');
+      cancellingId = null;
+    }
+
+    async function submitOrderCancellation() {
+      if (!cancellingId) return;
+      const b = document.getElementById('btn-cancel-submit');
+      b.disabled = true;
+      b.innerText = 'Cancelling...';
+
+      try {
+        const res = await fetch(`/api/kiosk/orders/${cancellingId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Cancel failed');
+        showToast(`Order ${cancellingId} cancelled`, 'success');
+        closeCancelModal();
+        fetchOrders();
+      } catch (err) {
+        showToast(err.message || 'Error cancelling', 'error');
+      } finally {
+        b.disabled = false;
+        b.innerText = 'Cancel Order';
+      }
+    }
+
+    // Stats Fetcher
+    async function fetchStats() {
+      try {
+        const res = await fetch('/api/kiosk/stats');
+        if (!res.ok) return;
+        const d = await res.json();
+        document.getElementById('stat-name').innerText = d.station_name || 'Station 01';
+        document.getElementById('stat-loc').innerText = d.station_location || 'Library Ground Floor';
+        document.getElementById('stat-completed-count').innerText = d.completed_orders || 0;
+        document.getElementById('stat-active-count').innerText = d.active_jobs || 0;
+      } catch (e) {
+        console.warn('Stats fetch error', e);
+      }
+    }
+
+    // Init
     fetchOrders();
-    loadPayPalSDK();
+    fetchStats();
+    initPayPal();
+    renderIcons();
   </script>
 </body>
 </html>

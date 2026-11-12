@@ -19,6 +19,7 @@ from app.services.ai_optimizer import ai_optimizer
 from app.db.models.order import Order, OrderStatus
 from app.db.models.document import Document, DocumentStatus
 from app.db.models.print_server import PrintServer, PrintServerStatus
+from app.db.models.printer import Printer
 from app.db.models.payment import Payment, PaymentStatus
 from app.db.models.otp import OTP
 from app.db.models.print_job import PrintJob, PrintJobStatus
@@ -393,3 +394,58 @@ async def list_recent_orders(
             "created_at": ord.created_at.isoformat() if ord.created_at else None
         })
     return {"orders": results}
+
+@router.delete("/orders/{order_id}")
+async def cancel_kiosk_order(
+    order_id: str,
+    db: Session = Depends(get_db)
+):
+    """Cancels an order and deactivates associated release code."""
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found.")
+
+    otp = db.query(OTP).filter(OTP.order_id == order.id).first()
+    if otp:
+        otp.active = False
+
+    job = db.query(PrintJob).filter(PrintJob.order_id == order.id).first()
+    if job:
+        job.status = PrintJobStatus.CANCELLED
+
+    order.status = OrderStatus.CANCELLED
+    db.commit()
+
+    return {"status": "CANCELLED", "order_id": order_id, "message": "Order cancelled."}
+
+@router.get("/stats")
+async def get_kiosk_system_stats(
+    db: Session = Depends(get_db)
+):
+    """Returns kiosk station overview and hardware status."""
+    station = _get_or_create_default_station(db)
+    printers = db.query(Printer).filter(Printer.server_id == station.id).all()
+    total_orders = db.query(Order).count()
+    completed_orders = db.query(Order).filter(Order.status == OrderStatus.COMPLETED).count()
+    paid_orders = db.query(Order).filter(Order.status == OrderStatus.PAID).count()
+
+    return {
+        "station_id": station.id,
+        "station_name": station.name,
+        "station_location": station.location,
+        "station_status": station.status.value,
+        "total_orders": total_orders,
+        "completed_orders": completed_orders,
+        "active_jobs": paid_orders,
+        "printers": [
+            {
+                "id": p.id,
+                "name": p.display_name or p.cups_printer_name,
+                "status": p.printer_status,
+                "supports_color": p.supports_color,
+                "supports_duplex": p.supports_duplex
+            }
+            for p in printers
+        ]
+    }
+
