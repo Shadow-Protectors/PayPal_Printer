@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmartPrint</title>
   
-  <!-- Inter font from Google Fonts -->
+  <!-- Inter & JetBrains Mono Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -27,27 +27,10 @@
           },
           colors: {
             border: '#e2e8f0',
-            input: '#e2e8f0',
-            ring: '#0f172a',
-            background: '#ffffff',
-            foreground: '#0f172a',
-            muted: {
-              DEFAULT: '#f1f5f9',
-              foreground: '#64748b',
-            },
-            primary: {
-              DEFAULT: '#0f172a',
-              foreground: '#ffffff',
-            },
-            accent: {
-              DEFAULT: '#f8fafc',
-              foreground: '#0f172a',
-            },
             sidebar: {
               DEFAULT: '#090d16',
-              foreground: '#94a3b8',
-              active: '#1e293b',
               border: '#1e293b',
+              active: '#1e293b',
             }
           }
         }
@@ -56,11 +39,6 @@
   </script>
 
   <style>
-    :root {
-      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --font-mono: 'JetBrains Mono', monospace;
-    }
-    
     * {
       border-color: #e2e8f0;
       -webkit-font-smoothing: antialiased;
@@ -68,7 +46,7 @@
     }
 
     body {
-      font-family: var(--font-sans);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       letter-spacing: -0.012em;
     }
 
@@ -88,12 +66,10 @@
       background: #94a3b8;
     }
 
-    /* Sidebar transition */
+    /* Smooth sidebar transition */
     #sidebar {
       transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    
-    /* Collapsed sidebar styling */
     #sidebar.sidebar-collapsed {
       width: 4rem; /* 64px */
     }
@@ -126,19 +102,24 @@
     .animate-toast {
       animation: toastIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
+
+    .pin-key:active {
+      transform: scale(0.95);
+      background-color: #334155;
+    }
   </style>
 </head>
 <body class="h-full bg-slate-50 text-slate-900 flex overflow-hidden">
 
-  <!-- Mobile Sidebar Backdrop Overlay -->
+  <!-- Mobile Sidebar Overlay Backdrop -->
   <div id="mobile-backdrop" onclick="toggleSidebar()" class="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm hidden md:hidden"></div>
 
   <!-- ======================================================== -->
-  <!-- SIDEBAR COMPONENT (shadcn/ui Sidebar)                   -->
+  <!-- SIDEBAR (shadcn/ui Sidebar - Single Navigation Source)    -->
   <!-- ======================================================== -->
   <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#090d16] text-slate-300 border-r border-[#1e293b] flex flex-col shrink-0 -translate-x-full md:translate-x-0 md:static">
     
-    <!-- Sidebar Header with Brand & Close/Collapse Trigger -->
+    <!-- Sidebar Header with Brand & Close Button -->
     <div class="h-14 px-3.5 flex items-center justify-between border-b border-[#1e293b]">
       <div class="flex items-center space-x-2.5 min-w-0">
         <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-sm">
@@ -150,34 +131,33 @@
         </div>
       </div>
       
-      <!-- Sidebar Close / Collapse Button -->
       <button onclick="toggleSidebar()" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors" title="Toggle sidebar">
         <i id="sidebar-collapse-icon" data-lucide="panel-left-close" class="w-4 h-4"></i>
       </button>
     </div>
 
-    <!-- Sidebar Navigation Menu -->
+    <!-- Sidebar Navigation Links -->
     <nav class="flex-1 px-2.5 py-3 space-y-1 overflow-y-auto">
       
       <button onclick="switchTab('terminal')" id="nav-terminal" class="sidebar-icon-center w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors bg-slate-800 text-white">
         <i data-lucide="upload" class="w-4 h-4 text-blue-400 shrink-0"></i>
-        <span class="sidebar-text">Dispatch</span>
+        <span class="sidebar-text">Print Terminal</span>
       </button>
 
       <button onclick="switchTab('orders')" id="nav-orders" class="sidebar-icon-center w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/60">
         <i data-lucide="list" class="w-4 h-4 text-slate-400 shrink-0"></i>
-        <span class="sidebar-text">Queue</span>
+        <span class="sidebar-text">Print Queue</span>
         <span id="badge-order-count" class="sidebar-badge ml-auto text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">0</span>
       </button>
 
       <button onclick="switchTab('claim')" id="nav-claim" class="sidebar-icon-center w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/60">
         <i data-lucide="keypad" class="w-4 h-4 text-slate-400 shrink-0"></i>
-        <span class="sidebar-text">Touchscreen</span>
+        <span class="sidebar-text">Touchscreen Kiosk</span>
       </button>
 
       <button onclick="switchTab('hardware')" id="nav-hardware" class="sidebar-icon-center w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/60">
         <i data-lucide="server" class="w-4 h-4 text-slate-400 shrink-0"></i>
-        <span class="sidebar-text">Hardware</span>
+        <span class="sidebar-text">Hardware & Status</span>
       </button>
 
     </nav>
@@ -185,23 +165,21 @@
     <!-- Sidebar Footer / Operator Avatar Dropdown Component -->
     <div class="p-2.5 border-t border-[#1e293b] relative">
       <div onclick="toggleUserMenu(event)" class="sidebar-icon-center w-full flex items-center space-x-2.5 p-2 rounded-md hover:bg-slate-800/70 cursor-pointer transition-colors">
-        <!-- Avatar with Status Dot -->
         <div class="relative w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center font-medium text-xs text-white shrink-0">
           <span>OP</span>
           <span class="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 border border-[#090d16]"></span>
         </div>
         <div class="sidebar-text flex-1 min-w-0 text-left">
-          <div class="text-xs font-medium text-white truncate">Operator</div>
-          <div class="text-[10px] text-slate-400 truncate">Library 1F</div>
+          <div class="text-xs font-medium text-white truncate">Station Operator</div>
+          <div class="text-[10px] text-slate-400 truncate">Main Campus Kiosk #1</div>
         </div>
         <i data-lucide="chevrons-up-down" class="sidebar-text w-3.5 h-3.5 text-slate-400 shrink-0"></i>
       </div>
 
-      <!-- User Dropdown Menu (shadcn/ui Dropdown Menu) -->
       <div id="user-menu" class="hidden absolute bottom-14 left-2.5 right-2.5 bg-white text-slate-900 rounded-lg shadow-xl border border-slate-200 py-1 z-50 text-xs">
         <div class="px-3 py-2 border-b border-slate-100">
-          <div class="font-medium">Terminal Station 01</div>
-          <div class="text-[11px] text-slate-500">Main Campus Network</div>
+          <div class="font-medium text-slate-900">Station 01</div>
+          <div class="text-[11px] text-slate-500">Campus Local Network</div>
         </div>
         <button onclick="switchTab('hardware'); toggleUserMenu()" class="w-full text-left px-3 py-1.5 hover:bg-slate-100 flex items-center space-x-2 text-slate-700">
           <i data-lucide="server" class="w-3.5 h-3.5"></i>
@@ -221,90 +199,58 @@
   </aside>
 
   <!-- ======================================================== -->
-  <!-- MAIN WORKSPACE VIEWPORT                                  -->
+  <!-- MAIN WORKSPACE                                           -->
   <!-- ======================================================== -->
   <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white">
     
-    <!-- Top Header Navigation Bar (shadcn/ui Header) -->
+    <!-- Top Header Bar (No Repeated Sub-Header Tabs!) -->
     <header class="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between shrink-0">
       <div class="flex items-center space-x-3">
-        <!-- Sidebar Toggle Trigger Button (PanelLeft) -->
         <button onclick="toggleSidebar()" class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors" title="Toggle sidebar">
           <i data-lucide="panel-left" class="w-4 h-4"></i>
         </button>
         
         <div class="h-4 w-[1px] bg-slate-200"></div>
 
-        <!-- Breadcrumb (shadcn/ui Breadcrumb) -->
         <nav class="flex items-center space-x-1.5 text-xs text-slate-500 font-medium">
-          <span class="text-slate-900">Terminal</span>
+          <span class="text-slate-900 font-semibold">Terminal</span>
           <span>/</span>
-          <span id="breadcrumb-title" class="text-slate-600">Dispatch</span>
+          <span id="breadcrumb-title" class="text-slate-600">Print Terminal</span>
         </nav>
       </div>
 
-      <!-- Right Header Actions -->
-      <div class="flex items-center space-x-2">
-        <!-- PayPal Sandbox Pill Badge -->
+      <div class="flex items-center space-x-2.5">
         <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
           <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
           <span>PayPal Sandbox</span>
         </div>
 
-        <!-- Refresh Button -->
         <button onclick="fetchOrders(); fetchStats(); showToast('Updated', 'info')" class="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors" title="Refresh">
           <i data-lucide="refresh-cw" class="w-4 h-4"></i>
         </button>
 
-        <!-- Station Avatar -->
         <div class="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-semibold">
           K1
         </div>
       </div>
     </header>
 
-    <!-- Sub-Header: Segmented Tabs (shadcn/ui Tabs) -->
-    <div class="bg-slate-50 border-b border-slate-200 px-4 py-2 shrink-0">
-      <div class="inline-flex h-8 items-center justify-center rounded-lg bg-slate-200/70 p-1 text-slate-600 text-xs">
-        <button onclick="switchTab('terminal')" id="tab-btn-terminal" class="tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium ring-offset-background transition-all bg-white text-slate-900 shadow-sm">
-          Dispatch
-        </button>
-        <button onclick="switchTab('orders')" id="tab-btn-orders" class="tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium ring-offset-background transition-all text-slate-600 hover:text-slate-900">
-          Queue
-        </button>
-        <button onclick="switchTab('claim')" id="tab-btn-claim" class="tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium ring-offset-background transition-all text-slate-600 hover:text-slate-900">
-          Touchscreen
-        </button>
-        <button onclick="switchTab('hardware')" id="tab-btn-hardware" class="tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium ring-offset-background transition-all text-slate-600 hover:text-slate-900">
-          Hardware
-        </button>
-      </div>
-    </div>
-
-    <!-- Main Scrollable Content Body -->
+    <!-- Scrollable Workspace Body -->
     <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-50/50">
       <div class="max-w-4xl mx-auto space-y-6">
 
         <!-- ======================================================== -->
-        <!-- VIEW 1: PRINT TERMINAL (Upload / Configure / Release)    -->
+        <!-- VIEW 1: PRINT TERMINAL (Upload / AI Summary / Receipt)   -->
         <!-- ======================================================== -->
         <div id="view-terminal" class="view-panel space-y-6">
 
-          <!-- View Title -->
           <div class="flex items-center justify-between">
-            <div>
-              <h1 class="text-lg font-bold text-slate-900 tracking-tight sm:text-xl">Print Terminal</h1>
-            </div>
+            <h1 class="text-lg font-bold text-slate-900 tracking-tight sm:text-xl">Print Terminal</h1>
             <span class="text-xs text-slate-400 font-mono">Max 50MB PDF</span>
           </div>
 
-          <!-- Step 1: Document Upload Card (shadcn/ui Card) -->
+          <!-- Step 1: Upload Card -->
           <div id="card-upload" class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Step 1 • Document Upload</span>
-            </div>
-
-            <!-- Drag and Drop Dropzone -->
             <div id="drop-zone" class="border-2 border-dashed border-slate-200 hover:border-slate-400 rounded-xl p-8 sm:p-12 text-center cursor-pointer bg-slate-50/50 hover:bg-slate-100/50 transition-all flex flex-col items-center justify-center">
               <input type="file" id="file-input" accept=".pdf" class="hidden">
               <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 mb-3">
@@ -316,130 +262,183 @@
               </button>
             </div>
 
-            <!-- Upload Progress & Spinner (shadcn/ui Progress & Spinner) -->
+            <!-- Upload Progress & Spinner -->
             <div id="upload-progress" class="hidden py-8 px-4 text-center">
               <div class="inline-flex items-center justify-center mb-3">
-                <div class="w-6 h-6 rounded-full border-2 border-slate-900 border-t-transparent animate-spin"></div>
+                <div class="w-5 h-5 rounded-full border-2 border-slate-900 border-t-transparent animate-spin"></div>
               </div>
-              <div class="text-xs font-semibold text-slate-900">Processing document</div>
-              <div id="progress-sub" class="text-[11px] text-slate-500 mt-0.5">Analyzing page count</div>
+              <div class="text-xs font-medium text-slate-900">Processing document...</div>
+              <div id="progress-sub" class="text-[11px] text-slate-500 mt-0.5">Preparing print options...</div>
               
-              <div class="max-w-xs mx-auto mt-4 bg-slate-100 rounded-full h-1 overflow-hidden">
+              <div class="max-w-xs mx-auto mt-3 bg-slate-100 rounded-full h-1 overflow-hidden">
                 <div id="progress-bar-fill" class="bg-slate-900 h-1 rounded-full transition-all duration-300 w-1/4"></div>
               </div>
             </div>
           </div>
 
-          <!-- Step 2: Print Configuration & Checkout Card -->
-          <div id="card-pricing" class="hidden bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
-            <div class="flex items-center justify-between">
-              <div>
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Step 2 • Print Options</span>
-                <div id="doc-meta-label" class="text-xs font-medium text-slate-900 mt-0.5">--</div>
+          <!-- Step 2: Document Processed & Print Options Card -->
+          <div id="card-pricing" class="hidden space-y-6">
+            
+            <!-- Document Info Banner with Quick Actions -->
+            <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div class="flex items-center space-x-3 min-w-0">
+                <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <i data-lucide="file-text" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                  <div id="doc-meta-name" class="text-xs font-bold text-slate-900 truncate">document.pdf</div>
+                  <div id="doc-meta-pages" class="text-[11px] text-slate-500">-- Pages Uploaded</div>
+                </div>
               </div>
-              <span id="savings-badge" class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-                Save 60%
+
+              <!-- Action buttons to Preview & Change File -->
+              <div class="flex items-center space-x-2">
+                <button onclick="openDocumentPreviewModal(fileId)" class="inline-flex items-center space-x-1.5 text-xs font-medium px-3 py-1.5 rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 shadow-sm transition-colors">
+                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  <span>Preview Document</span>
+                </button>
+                <button onclick="resetFlow()" class="text-xs text-slate-500 hover:text-slate-900 font-medium px-2.5 py-1.5 rounded hover:bg-slate-100 transition-colors">
+                  Change File
+                </button>
+              </div>
+            </div>
+
+            <!-- Print Mode Selection Cards -->
+            <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
+              <div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Print Mode</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                
+                <!-- Option A: Summary Sheet -->
+                <div id="opt-summary" onclick="selectMode('summary')" class="border-2 border-slate-900 bg-slate-50/50 rounded-xl p-4 cursor-pointer transition-all relative">
+                  <div class="flex items-start justify-between">
+                    <div class="flex items-center space-x-2">
+                      <div id="radio-summary" class="w-4 h-4 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                        <div class="w-2 h-2 rounded-full bg-slate-900"></div>
+                      </div>
+                      <div>
+                        <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Condensed</span>
+                        <div class="text-sm font-bold text-slate-900">AI Revision Sheet</div>
+                      </div>
+                    </div>
+                    <span id="price-summary" class="text-base font-bold text-slate-900">$0.00</span>
+                  </div>
+                  <div class="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs font-medium text-slate-600">
+                    <span id="pages-summary">-- Pages</span>
+                    <span class="text-slate-600 font-medium">Toner-efficient</span>
+                  </div>
+                </div>
+
+                <!-- Option B: Full Print -->
+                <div id="opt-full" onclick="selectMode('full')" class="border border-slate-200 hover:border-slate-300 rounded-xl p-4 cursor-pointer transition-all bg-white relative">
+                  <div class="flex items-start justify-between">
+                    <div class="flex items-center space-x-2">
+                      <div id="radio-full" class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                        <div class="w-2 h-2 rounded-full bg-transparent"></div>
+                      </div>
+                      <div>
+                        <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Complete</span>
+                        <div class="text-sm font-bold text-slate-900">Full Document</div>
+                      </div>
+                    </div>
+                    <span id="price-full" class="text-base font-bold text-slate-900">$0.00</span>
+                  </div>
+                  <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-500">
+                    <span id="pages-full">-- Pages</span>
+                    <span>All original pages</span>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Total & Payment Options -->
+              <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Due</span>
+                  <div class="flex items-baseline space-x-1 mt-0.5">
+                    <span id="checkout-amount" class="text-2xl font-bold text-slate-900">$0.00</span>
+                    <span class="text-xs text-slate-500 font-medium">USD</span>
+                  </div>
+                </div>
+
+                <div class="w-full sm:w-80 space-y-2">
+                  <div id="paypal-button-container" class="w-full min-h-[40px]"></div>
+
+                  <button id="btn-sandbox-pay" onclick="runSandboxPayment()" class="w-full inline-flex items-center justify-center rounded-md text-xs font-semibold h-9 px-4 bg-slate-900 text-white hover:bg-slate-800 shadow transition-colors space-x-2">
+                    <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
+                    <span>Sandbox Payment</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Step 3: Verified Release Screen Card -->
+          <div id="card-release" class="hidden bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
+            
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <i data-lucide="check" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h2 class="text-sm font-bold text-slate-900">Payment Verified</h2>
+                  <div id="release-order-id" class="text-xs font-mono text-slate-500">Order ORD-XXXX</div>
+                </div>
+              </div>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                QUEUED AT STATION 01
               </span>
             </div>
 
-            <!-- Options Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              <!-- Option A: Summary Sheet -->
-              <div id="opt-summary" onclick="selectMode('summary')" class="border-2 border-slate-900 bg-slate-50/50 rounded-xl p-4 cursor-pointer transition-all relative">
-                <div class="flex items-start justify-between">
-                  <div class="flex items-center space-x-2">
-                    <div id="radio-summary" class="w-4 h-4 rounded-full border-2 border-slate-900 flex items-center justify-center">
-                      <div class="w-2 h-2 rounded-full bg-slate-900"></div>
-                    </div>
-                    <div>
-                      <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Condensed</span>
-                      <div class="text-sm font-bold text-slate-900">Revision Sheet</div>
-                    </div>
-                  </div>
-                  <span id="price-summary" class="text-base font-bold text-slate-900">$0.00</span>
-                </div>
-                <div class="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs font-medium text-slate-600">
-                  <span id="pages-summary">-- Pages</span>
-                  <span class="text-emerald-700 font-semibold">Toner-Efficient</span>
-                </div>
-              </div>
-
-              <!-- Option B: Full Print -->
-              <div id="opt-full" onclick="selectMode('full')" class="border border-slate-200 hover:border-slate-300 rounded-xl p-4 cursor-pointer transition-all bg-white relative">
-                <div class="flex items-start justify-between">
-                  <div class="flex items-center space-x-2">
-                    <div id="radio-full" class="w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center">
-                      <div class="w-2 h-2 rounded-full bg-transparent"></div>
-                    </div>
-                    <div>
-                      <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Standard</span>
-                      <div class="text-sm font-bold text-slate-900">Complete Document</div>
-                    </div>
-                  </div>
-                  <span id="price-full" class="text-base font-bold text-slate-900">$0.00</span>
-                </div>
-                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-500">
-                  <span id="pages-full">-- Pages</span>
-                  <span>Original Slides</span>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- Total & Checkout Footer -->
-            <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Due</span>
-                <div class="flex items-baseline space-x-1 mt-0.5">
-                  <span id="checkout-amount" class="text-2xl font-bold text-slate-900">$0.00</span>
-                  <span class="text-xs text-slate-500 font-medium">USD</span>
-                </div>
-              </div>
-
-              <div class="w-full sm:w-80 space-y-2">
-                <div id="paypal-button-container" class="w-full min-h-[40px]"></div>
-
-                <button id="btn-sandbox-pay" onclick="runSandboxPayment()" class="w-full inline-flex items-center justify-center rounded-md text-xs font-semibold h-9 px-4 bg-slate-900 text-white hover:bg-slate-800 shadow transition-colors space-x-2">
-                  <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
-                  <span>Sandbox Payment</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Step 3: Verified Release Card -->
-          <div id="card-release" class="hidden bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                <i data-lucide="check" class="w-4 h-4"></i>
-              </div>
-              <div>
-                <h2 class="text-sm font-semibold text-slate-900">Payment Verified</h2>
-                <div class="text-xs text-slate-500">Print job queued at Station 01</div>
-              </div>
-            </div>
-
-            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center">
-              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Release PIN</span>
-              <div class="my-3 flex items-center justify-center space-x-2">
-                <span id="pin-display" class="font-mono text-3xl font-bold text-slate-900 tracking-widest bg-white px-5 py-2 rounded-lg border border-slate-200 shadow-sm">
+            <!-- PIN Display Box -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center space-y-2">
+              <span class="text-xs font-semibold text-slate-500 uppercase tracking-widest">Kiosk Release PIN</span>
+              <div class="flex items-center justify-center space-x-2">
+                <span id="pin-display" class="font-mono text-3xl sm:text-4xl font-bold text-slate-900 tracking-widest bg-white px-6 py-2 rounded-lg border border-slate-200 shadow-sm">
                   --- ---
                 </span>
                 <button onclick="copyCurrentPIN()" class="p-2.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors" title="Copy PIN">
-                  <i data-lucide="copy" class="w-4 h-4"></i>
+                  <i data-lucide="copy" class="w-5 h-5"></i>
                 </button>
               </div>
-              <span class="text-xs text-slate-500">Valid for 30 minutes</span>
+              <div class="text-xs text-slate-500">Valid for 30 minutes</div>
             </div>
 
-            <div class="flex flex-col sm:flex-row gap-2">
-              <button onclick="switchTab('claim')" class="flex-1 inline-flex items-center justify-center rounded-md text-xs font-semibold h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white shadow transition-colors space-x-2">
+            <!-- Receipt Summary Box with PDF Preview Button -->
+            <div class="bg-slate-50/50 border border-slate-100 rounded-lg p-3.5 text-xs space-y-2 text-slate-600">
+              <div class="flex justify-between">
+                <span>Document:</span>
+                <span id="receipt-doc" class="font-medium text-slate-900 truncate max-w-[200px]">--</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Print Mode:</span>
+                <span id="receipt-mode" class="font-medium text-slate-900 uppercase">--</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Total Paid:</span>
+                <span id="receipt-total" class="font-bold text-slate-900">--</span>
+              </div>
+              <div class="pt-2 border-t border-slate-200 flex items-center justify-between">
+                <span>Printable Document:</span>
+                <button onclick="openDocumentPreviewModal(fileId)" class="text-blue-600 hover:text-blue-700 font-semibold underline flex items-center space-x-1">
+                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                  <span>Preview Document</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-2 pt-2">
+              <button onclick="openTouchscreenWithPIN()" class="flex-1 inline-flex items-center justify-center rounded-md text-xs font-semibold h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white shadow transition-colors space-x-2">
                 <i data-lucide="play" class="w-3.5 h-3.5"></i>
-                <span>Release at Touchscreen</span>
+                <span>Open Touchscreen</span>
               </button>
               <button onclick="resetFlow()" class="inline-flex items-center justify-center rounded-md text-xs font-semibold h-9 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors">
-                New Print
+                New Document
               </button>
             </div>
           </div>
@@ -447,23 +446,19 @@
         </div>
 
         <!-- ======================================================== -->
-        <!-- VIEW 2: PRINT QUEUE DATA TABLE (shadcn/ui Table)         -->
+        <!-- VIEW 2: PRINT QUEUE DATA TABLE                           -->
         <!-- ======================================================== -->
         <div id="view-orders" class="view-panel hidden space-y-4">
           
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h1 class="text-lg font-bold text-slate-900 tracking-tight sm:text-xl">Print Queue</h1>
-            </div>
+            <h1 class="text-lg font-bold text-slate-900 tracking-tight sm:text-xl">Print Queue</h1>
 
             <div class="flex items-center space-x-2">
-              <!-- Search Input -->
               <div class="relative w-full sm:w-60">
                 <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
                 <input type="text" id="order-search" oninput="applyOrderFilters()" placeholder="Filter orders..." class="w-full bg-white border border-slate-200 rounded-md pl-8 pr-3 py-1 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900">
               </div>
 
-              <!-- Status Filter Select -->
               <select id="order-status" onchange="applyOrderFilters()" class="bg-white border border-slate-200 rounded-md px-2.5 py-1 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900">
                 <option value="ALL">All</option>
                 <option value="COMPLETED">Completed</option>
@@ -472,14 +467,13 @@
                 <option value="CANCELLED">Cancelled</option>
               </select>
 
-              <!-- Refresh Button -->
               <button onclick="fetchOrders(); showToast('Queue refreshed', 'info')" class="p-1.5 border border-slate-200 bg-white hover:bg-slate-50 rounded-md text-slate-600" title="Refresh">
                 <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
               </button>
             </div>
           </div>
 
-          <!-- Table Container (shadcn/ui Table) -->
+          <!-- Table Container -->
           <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
@@ -517,60 +511,96 @@
         <!-- VIEW 3: TOUCHSCREEN PIN TERMINAL SIMULATOR               -->
         <!-- ======================================================== -->
         <div id="view-claim" class="view-panel hidden space-y-6">
-          <div>
+          <div class="flex items-center justify-between">
             <h1 class="text-lg font-bold text-slate-900 tracking-tight sm:text-xl">Touchscreen Terminal</h1>
+            <span class="text-xs text-slate-500 font-mono">Station Kiosk</span>
           </div>
 
-          <div class="bg-[#090d16] text-slate-100 border border-[#1e293b] rounded-xl p-6 sm:p-8 shadow-lg max-w-md mx-auto">
+          <div class="bg-[#090d16] text-slate-100 border border-[#1e293b] rounded-2xl p-6 sm:p-8 shadow-2xl max-w-sm mx-auto space-y-6">
+            
             <div class="flex items-center justify-between pb-3 border-b border-[#1e293b]">
               <div class="flex items-center space-x-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span class="text-xs font-mono font-medium text-slate-300">Station 01</span>
               </div>
-              <span class="text-xs font-mono text-slate-400">CUPS Ready</span>
+              <span class="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Ready</span>
             </div>
 
-            <div class="my-6 space-y-2">
-              <label class="block text-xs font-medium text-slate-300">Release PIN</label>
-              <input type="text" id="kiosk-pin-input" placeholder="123-456" maxlength="7" class="w-full bg-slate-900 border border-slate-700 text-white font-mono text-center text-xl py-2.5 rounded-lg focus:outline-none focus:border-blue-500 tracking-widest placeholder-slate-600">
+            <div class="space-y-1.5">
+              <label class="block text-center text-[11px] font-medium text-slate-400 uppercase tracking-widest">Enter Release Code</label>
+              <div class="relative">
+                <input type="text" id="kiosk-pin-input" readonly placeholder="--- ---" class="w-full bg-slate-900 border border-slate-700 text-white font-mono text-center text-2xl py-3 rounded-xl tracking-widest placeholder-slate-600 select-none cursor-default">
+              </div>
             </div>
 
-            <button onclick="submitPinClaim()" class="w-full inline-flex items-center justify-center rounded-md text-xs font-semibold h-9 px-4 bg-blue-600 hover:bg-blue-500 text-white shadow transition-colors space-x-2">
-              <i data-lucide="printer" class="w-3.5 h-3.5"></i>
-              <span>Release Print</span>
+            <!-- Touch Numpad -->
+            <div class="grid grid-cols-3 gap-2.5 pt-2">
+              <button onclick="pressPinDigit('1')" class="pin-key h-12 rounded-xl bg-slate-800 text-white font-mono text-lg font-bold hover:bg-slate-700 shadow-sm">1</button>
+              <button onclick="pressPinDigit('2')" class="pin-key h-12 rounded-xl bg-slate-800 text-white font-mono text-lg font-bold hover:bg-slate-700 shadow-sm">2</button>
+              <button onclick="pressPinDigit('3')" class="pin-key h-12 rounded-xl bg-slate-800 text-white font-mono text-lg font-bold hover:bg-slate-700 shadow-sm">3</button>
+              <button onclick="pressPinDigit('4')" class="pin-key h-12 rounded-xl bg-slate-800 text-white font-mono text-lg font-bold hover:bg-slate-700 shadow-sm">4</button>
+              <button onclick="pressPinDigit('5')" class="pin-key h-12 rounded-xl bg-slate-800 text-white font-mono text-lg font-bold hover:bg-slate-700 shadow-sm">5</button>
+              <button onclick="pressPinDigit('6')" class="pin-key h-12 rounded-xl bg-slate-800 text-white font-mono text-lg font-bold hover:bg-slate-700 shadow-sm">6</button>
+              <button onclick="pressPinDigit('7')" class="pin-key h-12 rounded-xl bg-slate-800 text-white font-mono text-lg font-bold hover:bg-slate-700 shadow-sm">7</button>
+              <button onclick="pressPinDigit('8')" class="pin-key h-12 rounded-xl bg-slate-800 text-white font-mono text-lg font-bold hover:bg-slate-700 shadow-sm">8</button>
+              <button onclick="pressPinDigit('9')" class="pin-key h-12 rounded-xl bg-slate-800 text-white font-mono text-lg font-bold hover:bg-slate-700 shadow-sm">9</button>
+              <button onclick="clearPinInput()" class="pin-key h-12 rounded-xl bg-slate-800 text-rose-400 font-mono text-xs font-bold hover:bg-slate-700 shadow-sm">CLR</button>
+              <button onclick="pressPinDigit('0')" class="pin-key h-12 rounded-xl bg-slate-800 text-white font-mono text-lg font-bold hover:bg-slate-700 shadow-sm">0</button>
+              <button onclick="backspacePinInput()" class="pin-key h-12 rounded-xl bg-slate-800 text-slate-300 font-mono text-sm font-bold hover:bg-slate-700 shadow-sm">
+                <i data-lucide="delete" class="w-4 h-4 mx-auto"></i>
+              </button>
+            </div>
+
+            <!-- Submit Release Button -->
+            <button id="btn-touchscreen-release" onclick="submitPinClaim()" class="w-full inline-flex items-center justify-center rounded-xl text-xs font-bold h-11 px-4 bg-blue-600 hover:bg-blue-500 text-white shadow-lg transition-colors space-x-2">
+              <i data-lucide="printer" class="w-4 h-4"></i>
+              <span>Print Document</span>
             </button>
 
-            <div id="kiosk-msg-box" class="hidden mt-4 p-2.5 rounded-lg text-xs font-mono"></div>
+            <!-- Status Output Box with Direct PDF Preview Trigger -->
+            <div id="kiosk-msg-box" class="hidden p-3 rounded-xl text-xs font-mono space-y-2">
+              <div id="kiosk-msg-text"></div>
+              <div id="kiosk-msg-actions" class="pt-2 border-t border-slate-700 flex items-center justify-between hidden">
+                <button id="btn-preview-claimed-pdf" onclick="openClaimedPreview()" class="text-blue-400 hover:underline font-sans text-xs flex items-center space-x-1">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                  <span>Preview Document</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- ======================================================== -->
-        <!-- VIEW 4: HARDWARE & SYSTEM STATUS                        -->
+        <!-- VIEW 4: HARDWARE & STATION STATUS                        -->
         <!-- ======================================================== -->
         <div id="view-hardware" class="view-panel hidden space-y-6">
-          <div>
+          <div class="flex items-center justify-between">
             <h1 class="text-lg font-bold text-slate-900 tracking-tight sm:text-xl">Hardware Status</h1>
+            <button onclick="fetchStats(); showToast('Hardware synced', 'info')" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-medium rounded-lg shadow-sm">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <span>Refresh CUPS</span>
+            </button>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-              <span class="text-xs font-medium text-slate-500">Station</span>
+              <span class="text-xs font-medium text-slate-500">Station Identity</span>
               <div id="stat-name" class="text-sm font-bold text-slate-900 mt-1">Main Campus Kiosk #1</div>
               <div id="stat-loc" class="text-xs text-slate-500 mt-0.5">Library Ground Floor</div>
             </div>
 
             <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-              <span class="text-xs font-medium text-slate-500">Status</span>
+              <span class="text-xs font-medium text-slate-500">CUPS Daemon</span>
               <div class="flex items-center space-x-2 mt-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                 <span class="text-sm font-bold text-slate-900">ONLINE</span>
               </div>
-              <div class="text-xs text-slate-500 mt-0.5">CUPS Daemon Ready</div>
+              <div class="text-xs text-slate-500 mt-0.5">Port 631 Ready</div>
             </div>
 
             <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-              <span class="text-xs font-medium text-slate-500">Completed Jobs</span>
+              <span class="text-xs font-medium text-slate-500">Completed Dispatches</span>
               <div id="stat-completed-count" class="text-xl font-bold text-slate-900 mt-1">0</div>
             </div>
 
@@ -581,34 +611,108 @@
 
           </div>
 
-          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
-            <span class="text-xs font-semibold text-slate-900">Printers</span>
-            <table class="w-full text-left text-xs">
-              <thead>
-                <tr class="border-b border-slate-200 text-slate-500 font-medium">
-                  <th class="py-2">Printer Name</th>
-                  <th class="py-2">Status</th>
-                  <th class="py-2">Color</th>
-                  <th class="py-2">Duplex</th>
-                  <th class="py-2">Paper</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 text-slate-700">
-                <tr>
-                  <td class="py-2 font-medium">Main Campus High-Speed Laser</td>
-                  <td class="py-2"><span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700">READY</span></td>
-                  <td class="py-2 text-slate-500">Supported</td>
-                  <td class="py-2 text-slate-500">Supported</td>
-                  <td class="py-2 text-emerald-700">Available</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+            <span class="text-xs font-bold text-slate-900 uppercase tracking-wider">Connected Printers & Supplies</span>
+            
+            <div class="border border-slate-200 rounded-lg p-4 space-y-3">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <div class="text-sm font-bold text-slate-900">Main Campus High-Speed Laser</div>
+                  <div class="text-xs text-slate-500">Driver: Generic PCL 6 / CUPS v2.4 • Location: Tray 1</div>
+                </div>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  READY
+                </span>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 text-xs">
+                <div class="bg-slate-50 border border-slate-100 rounded p-2">
+                  <div class="text-slate-500 text-[10px]">Black Toner</div>
+                  <div class="font-bold text-slate-900 mt-0.5">92%</div>
+                  <div class="w-full bg-slate-200 rounded-full h-1 mt-1"><div class="bg-slate-800 h-1 rounded-full" style="width: 92%"></div></div>
+                </div>
+                <div class="bg-slate-50 border border-slate-100 rounded p-2">
+                  <div class="text-slate-500 text-[10px]">Paper Tray</div>
+                  <div class="font-bold text-slate-900 mt-0.5">85% (A4)</div>
+                  <div class="w-full bg-slate-200 rounded-full h-1 mt-1"><div class="bg-emerald-600 h-1 rounded-full" style="width: 85%"></div></div>
+                </div>
+                <div class="bg-slate-50 border border-slate-100 rounded p-2">
+                  <div class="text-slate-500 text-[10px]">Color Mode</div>
+                  <div class="font-bold text-slate-900 mt-0.5">Supported</div>
+                  <div class="text-[10px] text-slate-400 mt-1">CMYK Active</div>
+                </div>
+                <div class="bg-slate-50 border border-slate-100 rounded p-2">
+                  <div class="text-slate-500 text-[10px]">Duplex Unit</div>
+                  <div class="font-bold text-slate-900 mt-0.5">Supported</div>
+                  <div class="text-[10px] text-slate-400 mt-1">Auto 2-Sided</div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
       </div>
     </main>
 
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: DOCUMENT PREVIEW & AI SUMMARY VIEWER (shadcn/ui)  -->
+  <!-- ======================================================== -->
+  <div id="modal-preview" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 hidden">
+    <div onclick="closePreviewModal()" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"></div>
+    <div class="animate-modal relative bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-4xl w-full h-[88vh] flex flex-col z-10 overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="h-14 px-5 border-b border-slate-200 flex items-center justify-between shrink-0 bg-slate-50/70">
+        <div class="flex items-center space-x-3 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center shrink-0">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+          </div>
+          <div class="min-w-0">
+            <h3 id="preview-filename" class="text-sm font-bold text-slate-900 truncate">Document Preview</h3>
+            <span class="text-[11px] text-slate-500">Print Preview</span>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <!-- Segmented Tab switcher inside preview -->
+          <div class="inline-flex h-8 items-center justify-center rounded-lg bg-slate-200/70 p-1 text-slate-600 text-xs">
+            <button onclick="switchPreviewSubTab('pdf-summary')" id="prev-tab-summary" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium transition-all bg-white text-slate-900 shadow-sm">
+              Revision Sheet
+            </button>
+            <button onclick="switchPreviewSubTab('pdf-original')" id="prev-tab-original" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium transition-all text-slate-600 hover:text-slate-900">
+              Original Document
+            </button>
+          </div>
+
+          <button onclick="closePreviewModal()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200/50">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="flex-1 overflow-hidden relative bg-slate-100 flex flex-col">
+        <div class="px-4 py-2 bg-white border-b border-slate-200 flex items-center justify-between text-xs text-slate-600">
+          <span id="preview-mode-desc" class="text-slate-600 font-medium">Toner-Optimized Print Output</span>
+          <a id="btn-download-active" href="#" target="_blank" download class="inline-flex items-center space-x-1.5 text-blue-600 font-semibold hover:underline">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Download PDF</span>
+          </a>
+        </div>
+        <iframe id="iframe-preview-pdf" class="w-full flex-1 border-0" src="about:blank"></iframe>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="h-12 px-5 border-t border-slate-200 bg-white flex items-center justify-end text-xs shrink-0">
+        <button onclick="closePreviewModal()" class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-md shadow-sm">
+          Close Preview
+        </button>
+      </div>
+
+    </div>
   </div>
 
   <!-- ======================================================== -->
@@ -655,14 +759,21 @@
         </div>
       </div>
 
-      <div class="pt-2 flex justify-end space-x-2">
-        <button onclick="copyDetailPIN()" class="inline-flex items-center justify-center rounded-md text-xs font-medium h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 space-x-1.5">
-          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-          <span>Copy PIN</span>
+      <div class="pt-2 flex justify-between items-center">
+        <button id="btn-detail-preview" onclick="openOrderDocPreview()" class="text-xs text-blue-600 font-semibold hover:underline flex items-center space-x-1">
+          <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+          <span>Preview PDF</span>
         </button>
-        <button onclick="closeDetailsModal()" class="inline-flex items-center justify-center rounded-md text-xs font-medium h-8 px-3 bg-slate-900 hover:bg-slate-800 text-white">
-          Close
-        </button>
+
+        <div class="flex space-x-2">
+          <button onclick="copyDetailPIN()" class="inline-flex items-center justify-center rounded-md text-xs font-medium h-8 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 space-x-1.5">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copy PIN</span>
+          </button>
+          <button onclick="closeDetailsModal()" class="inline-flex items-center justify-center rounded-md text-xs font-medium h-8 px-3 bg-slate-900 hover:bg-slate-800 text-white">
+            Close
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -691,13 +802,11 @@
     </div>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- TOAST NOTIFICATIONS (shadcn/ui Toaster)                  -->
-  <!-- ======================================================== -->
+  <!-- Toast Container -->
   <div id="toast-wrapper" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none max-w-xs w-full"></div>
 
   <!-- ======================================================== -->
-  <!-- APPLICATION CORE LOGIC                                   -->
+  <!-- APPLICATION SCRIPT                                       -->
   <!-- ======================================================== -->
   <script>
     let activeTab = 'terminal';
@@ -711,6 +820,7 @@
     const itemsPerPage = 8;
     let cancellingId = null;
     let modalSelectedOrder = null;
+    let currentPreviewFileId = null;
 
     function renderIcons() {
       if (typeof lucide !== 'undefined' && lucide.createIcons) {
@@ -718,14 +828,13 @@
       }
     }
 
-    // Sidebar Toggle & Collapse (shadcn Sidebar)
+    // Sidebar Toggle
     function toggleSidebar() {
       const sidebar = document.getElementById('sidebar');
       const backdrop = document.getElementById('mobile-backdrop');
       const icon = document.getElementById('sidebar-collapse-icon');
 
       if (window.innerWidth < 768) {
-        // Mobile drawer mode
         const isOpen = !sidebar.classList.contains('-translate-x-full');
         if (isOpen) {
           sidebar.classList.add('-translate-x-full');
@@ -735,7 +844,6 @@
           backdrop.classList.remove('hidden');
         }
       } else {
-        // Desktop collapse into icon-rail mode
         sidebar.classList.toggle('sidebar-collapsed');
         const isCollapsed = sidebar.classList.contains('sidebar-collapsed');
         if (icon) {
@@ -745,7 +853,7 @@
       renderIcons();
     }
 
-    // Keyboard shortcut Ctrl+B for Sidebar
+    // Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
@@ -754,16 +862,14 @@
       if (e.key === 'Escape') {
         closeDetailsModal();
         closeCancelModal();
+        closePreviewModal();
       }
     });
 
-    // Tab Switching
+    // Primary Single Navigation
     function switchTab(tabId) {
       activeTab = tabId;
       document.querySelectorAll('.view-panel').forEach(v => v.classList.add('hidden'));
-      document.querySelectorAll('.tab-trigger').forEach(b => {
-        b.className = "tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium ring-offset-background transition-all text-slate-600 hover:text-slate-900";
-      });
       document.querySelectorAll('#sidebar nav button').forEach(b => {
         b.className = "sidebar-icon-center w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors text-slate-400 hover:text-white hover:bg-slate-800/60";
       });
@@ -771,17 +877,17 @@
       const targetView = document.getElementById(`view-${tabId}`);
       if (targetView) targetView.classList.remove('hidden');
 
-      const activeTabBtn = document.getElementById(`tab-btn-${tabId}`);
-      if (activeTabBtn) {
-        activeTabBtn.className = "tab-trigger inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium ring-offset-background transition-all bg-white text-slate-900 shadow-sm";
-      }
-
       const activeNavBtn = document.getElementById(`nav-${tabId}`);
       if (activeNavBtn) {
         activeNavBtn.className = "sidebar-icon-center w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors bg-slate-800 text-white";
       }
 
-      const titles = { terminal: 'Dispatch', orders: 'Queue', claim: 'Touchscreen', hardware: 'Hardware' };
+      const titles = {
+        terminal: 'Print Terminal',
+        orders: 'Print Queue',
+        claim: 'Touchscreen Terminal',
+        hardware: 'Hardware Status'
+      };
       document.getElementById('breadcrumb-title').innerText = titles[tabId] || 'Terminal';
 
       if (window.innerWidth < 768) {
@@ -794,7 +900,7 @@
       renderIcons();
     }
 
-    // User Dropdown Menu
+    // User Menu
     function toggleUserMenu(e) {
       if (e) e.stopPropagation();
       document.getElementById('user-menu').classList.toggle('hidden');
@@ -807,7 +913,7 @@
       }
     });
 
-    // Toast Alerts (shadcn Toaster)
+    // Toast Alerts
     function showToast(text, type = 'info') {
       const box = document.getElementById('toast-wrapper');
       const item = document.createElement('div');
@@ -865,15 +971,15 @@
 
       const bar = document.getElementById('progress-bar-fill');
       const sub = document.getElementById('progress-sub');
-      bar.style.width = '30%';
-      sub.innerText = 'Uploading document...';
+      bar.style.width = '35%';
+      sub.innerText = 'Analyzing document pages...';
 
       const data = new FormData();
       data.append('file', file);
 
       setTimeout(() => {
-        bar.style.width = '70%';
-        sub.innerText = 'Calculating print modes...';
+        bar.style.width = '75%';
+        sub.innerText = 'Preparing print options...';
       }, 350);
 
       try {
@@ -889,8 +995,9 @@
 
         setTimeout(() => {
           progressBox.classList.add('hidden');
+          document.getElementById('card-upload').classList.add('hidden');
           showPricingCard();
-          showToast('File analyzed', 'success');
+          showToast('Document processed', 'success');
         }, 250);
 
       } catch (err) {
@@ -902,16 +1009,19 @@
 
     function showPricingCard() {
       document.getElementById('card-pricing').classList.remove('hidden');
-      document.getElementById('doc-meta-label').innerText = `${documentInfo.filename} • ${documentInfo.original_pages} pages`;
+      document.getElementById('doc-meta-name').innerText = documentInfo.filename;
+      document.getElementById('doc-meta-pages').innerText = `${documentInfo.original_pages} Pages`;
+
+      // Pricing cards
       document.getElementById('price-summary').innerText = `$${documentInfo.summary_price}`;
       document.getElementById('pages-summary').innerText = `${documentInfo.summary_pages} Pages`;
       document.getElementById('price-full').innerText = `$${documentInfo.full_price}`;
       document.getElementById('pages-full').innerText = `${documentInfo.original_pages} Pages`;
-      document.getElementById('savings-badge').innerText = `Save ${documentInfo.savings_percent}%`;
 
       selectMode('summary');
       mountPayPal();
       fetchOrders();
+      renderIcons();
     }
 
     function selectMode(mode) {
@@ -937,7 +1047,7 @@
       }
     }
 
-    // PayPal SDK Integration
+    // PayPal Integration
     async function initPayPal() {
       try {
         const res = await fetch('/api/kiosk/config');
@@ -959,12 +1069,12 @@
       container.innerHTML = '';
 
       paypal.Buttons({
-        style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'paypal', height: 36 },
+        style: { layout: 'vertical', color: 'blue', shape: 'rect', label: 'paypal', height: 38 },
         createOrder: async function() {
           const res = await fetch('/api/kiosk/create-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ file_id: fileId, mode: printMode, currency: 'USD' })
+            body: JSON.stringify({ file_id: fileId, mode: printMode, currency: 'USD', sandbox_simulation: false })
           });
           if (!res.ok) throw new Error('Order creation error');
           const d = await res.json();
@@ -988,13 +1098,13 @@
     async function runSandboxPayment() {
       const btn = document.getElementById('btn-sandbox-pay');
       btn.disabled = true;
-      btn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Verifying...</span>`;
+      btn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Verifying Sandbox...</span>`;
 
       try {
         const orderRes = await fetch('/api/kiosk/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ file_id: fileId, mode: printMode, currency: 'USD' })
+          body: JSON.stringify({ file_id: fileId, mode: printMode, currency: 'USD', sandbox_simulation: true })
         });
         if (!orderRes.ok) throw new Error('Order generation failed');
         const orderData = await orderRes.json();
@@ -1012,7 +1122,7 @@
         showToast(err.message || 'Payment failed', 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="credit-card" class="w-3.5 h-3.5"></i><span>Sandbox Payment</span>`;
+        btn.innerHTML = `<i data-lucide="credit-card" class="w-3.5 h-3.5"></i><span>Test Payment (Sandbox)</span>`;
         renderIcons();
       }
     }
@@ -1020,8 +1130,17 @@
     function handleVerifiedPayment(data) {
       document.getElementById('card-pricing').classList.add('hidden');
       document.getElementById('card-release').classList.remove('hidden');
+      
+      document.getElementById('release-order-id').innerText = `Order ${data.order_id}`;
       document.getElementById('pin-display').innerText = data.release_code;
       document.getElementById('kiosk-pin-input').value = data.release_code;
+
+      document.getElementById('receipt-doc').innerText = documentInfo ? documentInfo.filename : 'Document.pdf';
+      document.getElementById('receipt-mode').innerText = printMode;
+      const pages = printMode === 'summary' ? documentInfo.summary_pages : documentInfo.original_pages;
+      const price = printMode === 'summary' ? documentInfo.summary_price : documentInfo.full_price;
+      document.getElementById('receipt-total').innerText = `${pages} Pages • $${price} USD`;
+
       showToast('Payment verified. PIN ready.', 'success');
       fetchOrders();
       renderIcons();
@@ -1031,6 +1150,12 @@
       const pin = document.getElementById('pin-display').innerText.trim();
       navigator.clipboard.writeText(pin);
       showToast(`PIN ${pin} copied`, 'success');
+    }
+
+    function openTouchscreenWithPIN() {
+      const pin = document.getElementById('pin-display').innerText.trim();
+      document.getElementById('kiosk-pin-input').value = pin;
+      switchTab('claim');
     }
 
     function resetFlow() {
@@ -1043,21 +1168,64 @@
       document.getElementById('card-pricing').classList.add('hidden');
       document.getElementById('upload-progress').classList.add('hidden');
       document.getElementById('drop-zone').classList.remove('hidden');
+      document.getElementById('card-upload').classList.remove('hidden');
       switchTab('terminal');
     }
 
-    // Touchscreen PIN Release
+    // Touchscreen Numpad
+    function pressPinDigit(digit) {
+      const input = document.getElementById('kiosk-pin-input');
+      let val = input.value.replace(/-/g, '').trim();
+      if (val.length < 6) {
+        val += digit;
+        if (val.length > 3) {
+          input.value = val.slice(0, 3) + '-' + val.slice(3);
+        } else {
+          input.value = val;
+        }
+      }
+    }
+
+    function clearPinInput() {
+      document.getElementById('kiosk-pin-input').value = '';
+      const box = document.getElementById('kiosk-msg-box');
+      box.classList.add('hidden');
+    }
+
+    function backspacePinInput() {
+      const input = document.getElementById('kiosk-pin-input');
+      let val = input.value.replace(/-/g, '').trim();
+      if (val.length > 0) {
+        val = val.slice(0, -1);
+        if (val.length > 3) {
+          input.value = val.slice(0, 3) + '-' + val.slice(3);
+        } else {
+          input.value = val;
+        }
+      }
+    }
+
+    // Touchscreen Claim
+    let lastClaimedFileId = null;
+
     async function submitPinClaim() {
       const pin = document.getElementById('kiosk-pin-input').value.trim();
       if (!pin) {
-        showToast('Enter PIN', 'error');
+        showToast('Please enter a 6-digit PIN', 'error');
         return;
       }
 
+      const btn = document.getElementById('btn-touchscreen-release');
+      btn.disabled = true;
+      btn.innerHTML = `<div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div><span>Printing...</span>`;
+
       const box = document.getElementById('kiosk-msg-box');
+      const text = document.getElementById('kiosk-msg-text');
+      const actions = document.getElementById('kiosk-msg-actions');
       box.classList.remove('hidden');
-      box.className = "mt-4 p-2.5 rounded-lg text-xs font-mono bg-slate-800 text-slate-300";
-      box.innerText = 'Verifying PIN...';
+      box.className = "p-3 rounded-xl text-xs font-mono bg-slate-900 text-slate-300 border border-slate-700 space-y-2";
+      text.innerText = 'Verifying PIN...';
+      actions.classList.add('hidden');
 
       try {
         const res = await fetch('/api/kiosk/release-code', {
@@ -1068,14 +1236,29 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'PIN verification failed');
 
-        box.className = "mt-4 p-2.5 rounded-lg text-xs font-mono bg-emerald-950 text-emerald-300 border border-emerald-800";
-        box.innerText = `[SUCCESS] Document released for Order ${data.order_id}.`;
-        showToast('Document printed', 'success');
+        box.className = "p-3 rounded-xl text-xs font-mono bg-emerald-950 text-emerald-300 border border-emerald-800 space-y-2";
+        text.innerText = `Document released for Order ${data.order_id}.`;
+        
+        lastClaimedFileId = data.document_id || fileId;
+        actions.classList.remove('hidden');
+        showToast('Document printed successfully', 'success');
         fetchOrders();
       } catch (err) {
-        box.className = "mt-4 p-2.5 rounded-lg text-xs font-mono bg-rose-950 text-rose-300 border border-rose-800";
-        box.innerText = `[ERROR] ${err.message}`;
+        box.className = "p-3 rounded-xl text-xs font-mono bg-rose-950 text-rose-300 border border-rose-800 space-y-2";
+        text.innerText = err.message;
         showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="printer" class="w-4 h-4"></i><span>Print Document</span>`;
+        renderIcons();
+      }
+    }
+
+    function openClaimedPreview() {
+      if (lastClaimedFileId) {
+        openDocumentPreviewModal(lastClaimedFileId);
+      } else if (fileId) {
+        openDocumentPreviewModal(fileId);
       }
     }
 
@@ -1130,7 +1313,7 @@
         return `
           <tr class="hover:bg-slate-50 transition-colors">
             <td class="py-2.5 px-3 font-mono font-semibold text-slate-900">${o.order_id}</td>
-            <td class="py-2.5 px-3 max-w-[160px] truncate" title="${o.filename}">${o.filename}</td>
+            <td class="py-2.5 px-3 max-w-[150px] truncate" title="${o.filename}">${o.filename}</td>
             <td class="py-2.5 px-3 uppercase text-[10px] font-semibold text-slate-600">${o.mode}</td>
             <td class="py-2.5 px-3 text-center font-mono">${o.pages}</td>
             <td class="py-2.5 px-3 font-semibold text-slate-900">$${o.amount}</td>
@@ -1140,6 +1323,11 @@
             </td>
             <td class="py-2.5 px-3 text-right">
               <div class="inline-flex items-center space-x-1">
+                <!-- Preview Document Button -->
+                ${o.document_id ? `
+                <button onclick="openDocumentPreviewModal('${o.document_id}')" class="p-1 text-blue-600 hover:text-blue-800 rounded hover:bg-blue-50" title="Preview AI Summary & PDF">
+                  <i data-lucide="file-search" class="w-3.5 h-3.5"></i>
+                </button>` : ''}
                 <button onclick="openDetails('${o.order_id}')" class="p-1 text-slate-400 hover:text-slate-800 rounded hover:bg-slate-100" title="Details">
                   <i data-lucide="eye" class="w-3.5 h-3.5"></i>
                 </button>
@@ -1173,7 +1361,64 @@
       showToast(`PIN ${pin} copied`, 'success');
     }
 
-    // Details Modal
+    // Document Preview Modal
+    async function openDocumentPreviewModal(docId) {
+      if (!docId) return;
+      currentPreviewFileId = docId;
+
+      try {
+        const res = await fetch(`/api/kiosk/document/${docId}/preview`);
+        if (!res.ok) throw new Error('Preview failed');
+        const data = await res.json();
+
+        document.getElementById('preview-filename').innerText = data.filename || 'Document Preview';
+        
+        document.getElementById('modal-preview').classList.remove('hidden');
+        switchPreviewSubTab('pdf-summary');
+        renderIcons();
+      } catch (err) {
+        console.error('Preview error:', err);
+        showToast('Could not load preview', 'error');
+      }
+    }
+
+    function switchPreviewSubTab(tab) {
+      if (!currentPreviewFileId) return;
+      const btnSummary = document.getElementById('prev-tab-summary');
+      const btnOrig = document.getElementById('prev-tab-original');
+      const iframe = document.getElementById('iframe-preview-pdf');
+      const downloadBtn = document.getElementById('btn-download-active');
+      const modeDesc = document.getElementById('preview-mode-desc');
+
+      const inactiveClass = "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium transition-all text-slate-600 hover:text-slate-900";
+      const activeClass = "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 font-medium transition-all bg-white text-slate-900 shadow-sm";
+
+      if (tab === 'pdf-summary') {
+        btnSummary.className = activeClass;
+        btnOrig.className = inactiveClass;
+        const url = `/api/kiosk/document/${currentPreviewFileId}/download?type=summary`;
+        iframe.src = url;
+        downloadBtn.href = url;
+        modeDesc.innerText = 'Revision Sheet (Toner & Page Optimized)';
+      } else {
+        btnSummary.className = inactiveClass;
+        btnOrig.className = activeClass;
+        const url = `/api/kiosk/document/${currentPreviewFileId}/download?type=original`;
+        iframe.src = url;
+        downloadBtn.href = url;
+        modeDesc.innerText = 'Original Document (Full Pages)';
+      }
+      renderIcons();
+    }
+
+    function closePreviewModal() {
+      document.getElementById('modal-preview').classList.add('hidden');
+      const iframe = document.getElementById('iframe-preview-pdf');
+      if (iframe) iframe.src = 'about:blank';
+      currentPreviewFileId = null;
+    }
+
+    // Order Details Modal
     function openDetails(id) {
       const ord = orderList.find(o => o.order_id === id);
       if (!ord) return;
@@ -1196,6 +1441,13 @@
 
       document.getElementById('modal-details').classList.remove('hidden');
       renderIcons();
+    }
+
+    function openOrderDocPreview() {
+      if (modalSelectedOrder && modalSelectedOrder.document_id) {
+        closeDetailsModal();
+        openDocumentPreviewModal(modalSelectedOrder.document_id);
+      }
     }
 
     function closeDetailsModal() {
@@ -1243,7 +1495,7 @@
       }
     }
 
-    // Stats Fetcher
+    // Hardware Stats Fetcher
     async function fetchStats() {
       try {
         const res = await fetch('/api/kiosk/stats');

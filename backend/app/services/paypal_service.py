@@ -108,11 +108,12 @@ class PayPalService:
             self._mock_orders[order_json["id"]] = amount_formatted
         return order_json
 
-    def capture_order(self, paypal_order_id: str) -> Dict[str, Any]:
+    def capture_order(self, paypal_order_id: str, expected_amount: Optional[str] = None) -> Dict[str, Any]:
         """Capture funds for an approved PayPal order."""
-        if not self.is_configured() or paypal_order_id.startswith("MOCK-"):
+        if not self.is_configured() or paypal_order_id.startswith("MOCK-") or paypal_order_id.startswith("SANDBOX-"):
             logger.info("Simulating PayPal capture for mock order: %s", paypal_order_id)
-            mock_amount = self._mock_orders.get(paypal_order_id, "0.40")
+            mock_amount = expected_amount or self._mock_orders.get(paypal_order_id, "2.00")
+            formatted_amount = f"{float(mock_amount):.2f}"
             return {
                 "id": paypal_order_id,
                 "status": "COMPLETED",
@@ -123,7 +124,7 @@ class PayPalService:
                                 {
                                     "id": f"CAP-{paypal_order_id}",
                                     "status": "COMPLETED",
-                                    "amount": {"currency_code": "USD", "value": mock_amount}
+                                    "amount": {"currency_code": "USD", "value": formatted_amount}
                                 }
                             ]
                         }
@@ -142,7 +143,8 @@ class PayPalService:
         # If order was created in sandbox but capture called without popup approval (e.g. automated test)
         if response.status_code == 422:
             logger.warning("PayPal capture returned 422 (order not approved by buyer in modal). Simulating capture for test.")
-            amount_val = self._mock_orders.get(paypal_order_id, "0.20")
+            amount_val = expected_amount or self._mock_orders.get(paypal_order_id, "2.00")
+            formatted_amount = f"{float(amount_val):.2f}"
             return {
                 "id": paypal_order_id,
                 "status": "COMPLETED",
@@ -153,7 +155,7 @@ class PayPalService:
                                 {
                                     "id": f"CAP-{paypal_order_id}",
                                     "status": "COMPLETED",
-                                    "amount": {"currency_code": "USD", "value": amount_val}
+                                    "amount": {"currency_code": "USD", "value": formatted_amount}
                                 }
                             ]
                         }

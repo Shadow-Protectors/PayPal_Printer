@@ -217,7 +217,7 @@ async def log_requests_middleware(request: Request, call_next):
     try:
         response = await call_next(request)
         response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
         response.headers['Referrer-Policy'] = 'no-referrer'
         if path.startswith('/api/'):
             response.headers['Cache-Control'] = 'no-store'

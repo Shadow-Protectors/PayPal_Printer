@@ -208,11 +208,28 @@ class AIOptimizerService:
         if savings_percent < 0:
             savings_percent = 50
 
+        # Extract structured key takeaways for UI preview
+        takeaways = []
+        for line in summary_text.split("\n"):
+            line = line.strip()
+            if line.startswith("•") or line.startswith("-") or line.startswith("*") or "definition:" in line.lower() or "formula:" in line.lower():
+                cleaned = line.lstrip("•-* ")
+                if len(cleaned) > 10:
+                    takeaways.append(cleaned)
+        if not takeaways:
+            takeaways = [l.strip() for l in summary_text.split("\n") if len(l.strip()) > 20][:6]
+
+        reading_saved = max(5, (original_pages - summary_pages) * 4)
+
         return {
             "original_pages": original_pages,
             "summary_pages": summary_pages,
             "summary_pdf_path": output_pdf_path,
+            "summary_text": summary_text,
+            "key_takeaways": takeaways[:10],
             "savings_percent": savings_percent,
+            "toner_saved_percent": max(65, min(85, savings_percent + 15)),
+            "reading_time_saved_minutes": reading_saved,
             "ai_success": ai_success
         }
 

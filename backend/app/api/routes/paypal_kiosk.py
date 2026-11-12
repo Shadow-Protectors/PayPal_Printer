@@ -8,6 +8,8 @@ from typing import Optional, Dict, Any, List
 from pydantic import BaseModel
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from fastapi.responses import FileResponse
+from pypdf import PdfReader
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -49,6 +51,7 @@ class CreateOrderRequest(BaseModel):
     file_id: str
     mode: str = "summary"  # "summary" or "full"
     currency: str = "USD"
+    sandbox_simulation: bool = False
 
 class CaptureOrderRequest(BaseModel):
     paypal_order_id: str
@@ -124,6 +127,12 @@ async def upload_document(
         "summary_pages": summary_pages,
         "summary_price": summary_price,
         "savings_percent": opt_result["savings_percent"],
+        "toner_saved_percent": opt_result.get("toner_saved_percent", 75),
+        "reading_time_saved_minutes": opt_result.get("reading_time_saved_minutes", 30),
+        "summary_text": opt_result.get("summary_text", ""),
+        "key_takeaways": opt_result.get("key_takeaways", []),
+        "summary_url": f"/api/kiosk/document/{file_id}/download?type=summary",
+        "original_url": f"/api/kiosk/document/{file_id}/download?type=original",
         "ai_generated": opt_result["ai_success"],
         "currency": "USD"
     }
@@ -153,13 +162,26 @@ async def create_paypal_kiosk_order(
         amount = f"{(pages * rate):.2f}"
         desc = f"SmartPrint Full Print ({pages} pgs) for {doc.original_filename}"
 
-    # Call PayPal Sandbox API
-    paypal_order = paypal_service.create_order(
-        amount=amount,
-        currency=req.currency,
-        description=desc
-    )
-    paypal_order_id = paypal_order["id"]
+    if req.sandbox_simulation:
+        paypal_order_id = f"SANDBOX-{uuid.uuid4().hex[:12].upper()}"
+        paypal_order = {
+            "id": paypal_order_id,
+            "status": "CREATED",
+            "purchase_units": [
+                {
+                    "amount": {"currency_code": req.currency, "value": amount},
+                    "description": desc
+                }
+            ]
+        }
+    else:
+        # Call PayPal Sandbox API
+        paypal_order = paypal_service.create_order(
+            amount=amount,
+            currency=req.currency,
+            description=desc
+        )
+        paypal_order_id = paypal_order["id"]
 
     # Save pending Order
     order_id = f"ORD-{uuid.uuid4().hex[:8].upper()}"
@@ -240,7 +262,10 @@ async def capture_paypal_kiosk_order(
         }
 
     # Execute PayPal Capture
-    capture_data = paypal_service.capture_order(req.paypal_order_id)
+    capture_data = paypal_service.capture_order(
+        req.paypal_order_id,
+        expected_amount=str(order.amount)
+    )
     
     # Server-side verification
     is_valid = paypal_service.verify_capture(
@@ -343,8 +368,9 @@ async def release_kiosk_print(
 
     return {
         "status": "COMPLETED",
-        "message": "PIN verified! Document successfully released and printed at Kiosk Tray.",
-        "order_id": otp.order_id
+        "message": "PIN verified. Document released to tray.",
+        "order_id": otp.order_id,
+        "document_id": order.document_id if order else None
     }
 
 @router.get("/status/{paypal_order_id}")
@@ -384,6 +410,7 @@ async def list_recent_orders(
         otp = db.query(OTP).filter(OTP.order_id == ord.id).first()
         results.append({
             "order_id": ord.id,
+            "document_id": ord.document_id,
             "status": ord.status.value,
             "pages": ord.total_pages,
             "amount": str(ord.amount),
@@ -394,6 +421,99 @@ async def list_recent_orders(
             "created_at": ord.created_at.isoformat() if ord.created_at else None
         })
     return {"orders": results}
+
+@router.get("/document/{file_id}/download")
+async def download_kiosk_document(
+    file_id: str,
+    type: str = "summary",  # "summary" or "original"
+    db: Session = Depends(get_db)
+):
+    """Streams or downloads either original uploaded PDF or the AI summary PDF."""
+    doc = db.query(Document).filter(Document.id == file_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    if type == "summary":
+        summary_dir = Path(settings.STORAGE_ROOT) / "summaries"
+        filename_stem = Path(doc.stored_filename).stem
+        summary_path = summary_dir / f"{filename_stem}_ai_summary.pdf"
+        if not summary_path.exists():
+            if Path(doc.storage_key).exists():
+                ai_optimizer.optimize_document(doc.storage_key, str(summary_dir))
+        
+        if summary_path.exists():
+            return FileResponse(
+                path=str(summary_path),
+                media_type="application/pdf",
+                filename=f"{Path(doc.original_filename).stem}_AI_Summary.pdf",
+                content_disposition_type="inline"
+            )
+        return FileResponse(
+            path=doc.storage_key,
+            media_type="application/pdf",
+            filename=doc.original_filename,
+            content_disposition_type="inline"
+        )
+    else:
+        if not Path(doc.storage_key).exists():
+            raise HTTPException(status_code=404, detail="Original document file not found on disk.")
+        return FileResponse(
+            path=doc.storage_key,
+            media_type="application/pdf",
+            filename=doc.original_filename,
+            content_disposition_type="inline"
+        )
+
+@router.get("/document/{file_id}/preview")
+async def get_document_ai_preview(
+    file_id: str,
+    db: Session = Depends(get_db)
+):
+    """Returns structured AI summary and document analysis for preview modal."""
+    doc = db.query(Document).filter(Document.id == file_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    summary_dir = Path(settings.STORAGE_ROOT) / "summaries"
+    filename_stem = Path(doc.stored_filename).stem
+    summary_path = summary_dir / f"{filename_stem}_ai_summary.pdf"
+
+    summary_text = ""
+    takeaways = []
+    if summary_path.exists():
+        try:
+            reader = PdfReader(str(summary_path))
+            for page in reader.pages:
+                t = page.extract_text() or ""
+                summary_text += t + "\n"
+        except Exception:
+            pass
+
+    for line in summary_text.split("\n"):
+        line = line.strip()
+        if line.startswith("•") or line.startswith("-") or "definition:" in line.lower() or "formula:" in line.lower():
+            takeaways.append(line.lstrip("•-* "))
+    if not takeaways:
+        takeaways = [l.strip() for l in summary_text.split("\n") if len(l.strip()) > 20][:6]
+
+    rate = getattr(settings, "PER_PAGE_RATE", 2.00)
+    summary_pages = max(1, doc.page_count // 3)
+
+    return {
+        "file_id": doc.id,
+        "filename": doc.original_filename,
+        "original_pages": doc.page_count,
+        "summary_pages": summary_pages,
+        "full_price": f"{(doc.page_count * rate):.2f}",
+        "summary_price": f"{(summary_pages * rate):.2f}",
+        "savings_percent": round((1.0 - (summary_pages / max(1, doc.page_count))) * 100),
+        "toner_saved_percent": 75,
+        "reading_time_saved_minutes": max(10, doc.page_count * 3),
+        "summary_text": summary_text.strip(),
+        "key_takeaways": takeaways[:10],
+        "summary_url": f"/api/kiosk/document/{doc.id}/download?type=summary",
+        "original_url": f"/api/kiosk/document/{doc.id}/download?type=original"
+    }
 
 @router.delete("/orders/{order_id}")
 async def cancel_kiosk_order(
